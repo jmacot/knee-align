@@ -1007,13 +1007,16 @@ function calcularAKUMA(mHKA, mLDFA, mMPTA, JLCA) {
     const TD = esVaro ? (87 - mMPTA) : (mMPTA - 87);
     const FD = esVaro ? (mLDFA - 87) : (87 - mLDFA);
     const IAD = Math.abs(JLCA);
-    const EAD = esVaro ? (mLDFA - mMPTA) : (mMPTA - mLDFA);
-    const absEAD = Math.abs(EAD);
-    const GD = absEAD + IAD;
+    const GD = Math.abs(mHKA); // Deformidad global = desviación real del eje mecánico
+    const absEAD = Math.max(0, GD - IAD); // EAD = lo que no explica el JLCA
+    const EAD = esVaro ? absEAD : -absEAD;
+
+    // Capear IAD al GD (JLCA puede exceder la deformidad total si hay compensación ósea)
+    const iadEff = Math.min(IAD, GD);
 
     let iadPct = 0, eadPct = 0, tPct = 0, fPct = 0;
     if (GD > 0) {
-        iadPct = Math.round((IAD / GD) * 100);
+        iadPct = Math.round((iadEff / GD) * 100);
         eadPct = Math.round((absEAD / GD) * 100);
     }
     if (absEAD > 0) {
