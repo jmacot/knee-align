@@ -230,6 +230,7 @@
         .results-bar {
             display: grid; grid-template-columns: repeat(5, 1fr);
             gap: 10px; margin-bottom: 20px;
+            padding: 0 8px;
             animation: fadeInUp 0.6s ease-out both;
         }
         .result-box {
@@ -251,6 +252,22 @@
         .result-box.highlight .result-label { color: rgba(255,255,255,0.65); }
         .result-box.highlight .result-value { color: white; }
         .result-box.highlight .result-sublabel { color: rgba(255,255,255,0.75); }
+
+        /* CPAK result box — spans full row below */
+        .result-box.cpak-box {
+            grid-column: 1 / -1;
+            display: flex; align-items: center; justify-content: center; gap: 16px;
+            padding: 10px 20px;
+        }
+        .result-box.cpak-box .cpak-mini-svg { margin: 0; flex-shrink: 0; }
+        .result-box.cpak-box .cpak-info { text-align: center; }
+        .result-box .cpak-link {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 10px; font-weight: 600; color: var(--accent);
+            text-decoration: none; opacity: 0.7; transition: opacity 0.2s;
+        }
+        .result-box .cpak-link:hover { opacity: 1; }
+        .result-box .cpak-link svg { width: 12px; height: 12px; }
 
         /* ── INFO ROWS ── */
         .info-row {
@@ -674,7 +691,8 @@
             .card { padding: 18px 16px; }
             .correction-card { padding: 18px 16px; }
             .results-bar { grid-template-columns: repeat(2, 1fr); }
-            .results-bar .result-box:last-child { grid-column: 1 / -1; }
+            .results-bar .result-box.highlight { grid-column: 1 / -1; }
+            .results-bar .result-box.cpak-box { grid-column: 1 / -1; }
             .correction-grid { grid-template-columns: 1fr; }
             .formula-box { font-size: 13px; }
             .reco-name { font-size: 1.1rem; }
@@ -919,6 +937,60 @@ const EJEMPLOS = [
 ];
 
 // ─────────────────────────────────────────────
+//  CLASIFICACIÓN CPAK
+// ─────────────────────────────────────────────
+function calcularCPAK(mLDFA, mMPTA) {
+    const aHKA = mMPTA - mLDFA;
+    const JLO = mMPTA + mLDFA;
+    let hkaCat = 'Neutral', jloCat = 'Neutral';
+    if (aHKA < -2) hkaCat = 'Varus';
+    if (aHKA > 2) hkaCat = 'Valgus';
+    if (JLO < 177) jloCat = 'Apex Distal';
+    if (JLO > 183) jloCat = 'Apex Proximal';
+    let type = 'V';
+    if (jloCat === 'Apex Distal') {
+        type = hkaCat === 'Varus' ? 'I' : hkaCat === 'Neutral' ? 'II' : 'III';
+    } else if (jloCat === 'Neutral') {
+        type = hkaCat === 'Varus' ? 'IV' : hkaCat === 'Valgus' ? 'VI' : 'V';
+    } else {
+        type = hkaCat === 'Varus' ? 'VII' : hkaCat === 'Neutral' ? 'VIII' : 'IX';
+    }
+    return { type, aHKA, JLO, hkaCat, jloCat };
+}
+
+function cpakMiniSVG(type) {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const boneColor = isDark ? '#93c5fd' : '#1a3a5c';
+    const jointColor = isDark ? '#60a5fa' : '#2563eb';
+    let hka = 'Neutral', jlo = 'Neutral';
+    if (['I','IV','VII'].includes(type)) hka = 'Varus';
+    if (['III','VI','IX'].includes(type)) hka = 'Valgus';
+    if (['I','II','III'].includes(type)) jlo = 'Apex Distal';
+    if (['VII','VIII','IX'].includes(type)) jlo = 'Apex Proximal';
+    function rot(side) {
+        let f = 0, t = 0, j = 0;
+        if (hka === 'Varus') { f = side === 'left' ? 8 : -8; t = side === 'left' ? -8 : 8; }
+        else if (hka === 'Valgus') { f = side === 'left' ? -8 : 8; t = side === 'left' ? 8 : -8; }
+        if (jlo === 'Apex Distal') j = side === 'left' ? 15 : -15;
+        else if (jlo === 'Apex Proximal') j = side === 'left' ? -15 : 15;
+        return { f, t, j };
+    }
+    const L = rot('left'), R = rot('right');
+    return `<svg class="cpak-mini-svg" viewBox="0 0 100 100" width="56" height="56">
+        <g transform="translate(25,50)">
+            <g transform="rotate(${L.f})"><line x1="0" y1="-5" x2="0" y2="-42" stroke="${boneColor}" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="-45" r="2.5" fill="${boneColor}"/></g>
+            <g transform="rotate(${L.t})"><line x1="0" y1="5" x2="0" y2="42" stroke="${boneColor}" stroke-width="5" stroke-linecap="round"/><line x1="-7" y1="42" x2="7" y2="42" stroke="${boneColor}" stroke-width="2.5" stroke-linecap="round"/></g>
+            <g transform="rotate(${L.j})"><line x1="-15" y1="0" x2="15" y2="0" stroke="${jointColor}" stroke-width="3.5" stroke-linecap="round"/></g>
+        </g>
+        <g transform="translate(75,50)">
+            <g transform="rotate(${R.f})"><line x1="0" y1="-5" x2="0" y2="-42" stroke="${boneColor}" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="-45" r="2.5" fill="${boneColor}"/></g>
+            <g transform="rotate(${R.t})"><line x1="0" y1="5" x2="0" y2="42" stroke="${boneColor}" stroke-width="5" stroke-linecap="round"/><line x1="-7" y1="42" x2="7" y2="42" stroke="${boneColor}" stroke-width="2.5" stroke-linecap="round"/></g>
+            <g transform="rotate(${R.j})"><line x1="-15" y1="0" x2="15" y2="0" stroke="${jointColor}" stroke-width="3.5" stroke-linecap="round"/></g>
+        </g>
+    </svg>`;
+}
+
+// ─────────────────────────────────────────────
 //  CÁLCULO AKUMA (Ollivier et al. KSSTA 2025)
 // ─────────────────────────────────────────────
 function calcularAKUMA(mHKA, mLDFA, mMPTA, JLCA) {
@@ -1033,7 +1105,7 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
             recoClass = '';
         }
     } else {
-        recoType = 'Zona gris — Decisión compartida'; recoName = 'KO / UKA';
+        recoType = 'Zona gris — Decisión compartida'; recoName = 'Osteotomía / UKA';
         recoVariant = 'Considerar factores individuales del paciente';
         rationale = `IAD ${iadPct}% y EAD ${eadPct}%: ninguno supera el 60%. Ambas opciones (osteotomía y UKA) ofrecen potencial comparable. La decisión debe basarse en: edad (${edad}a), nivel de actividad, grado de artrosis, integridad ligamentosa y preferencia del paciente (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
         recoClass = 'grey';
@@ -1389,19 +1461,24 @@ function renderPhase1() {
     const clasificacion = clasificarDeformidad(mhka);
     const akuma = calcularAKUMA(mhka, _mldfa, _mmpta, _jlca);
     const diag = diagnosticoDiferencial(akuma, _edad, _mldfa, _mmpta, _jlca, null, mhka);
+    const cpak = calcularCPAK(_mldfa, _mmpta);
 
     // Store for phase 2
-    window._phase1 = { mhka, mldfa: _mldfa, mmpta: _mmpta, jlca: _jlca, edad: _edad, clasificacion, akuma, diag };
+    window._phase1 = { mhka, mldfa: _mldfa, mmpta: _mmpta, jlca: _jlca, edad: _edad, clasificacion, akuma, diag, cpak };
 
-    // Results bar (4 boxes, sin corrección)
+    // Results bar
     const tipoColor = clasificacion.tipo === 'VARO' ? 'var(--red)' : clasificacion.tipo === 'VALGO' ? 'var(--blue)' : 'var(--green)';
     const sevColorVar = clasificacion.sevColor === 'green' ? 'var(--green)' : clasificacion.sevColor === 'amber' ? 'var(--amber)' : 'var(--red)';
+    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const cpakUrl = isLocal ? '#' : `https://jmacot.github.io/CPAK/?ldfa=${_mldfa}&mpta=${_mmpta}&mhka=${mhka}`;
+    const eadLabel = akuma.eadPct > 0 ? (akuma.tPct >= 80 ? 'Tibial' : akuma.fPct >= 80 ? 'Femoral' : 'Mixto') : '—';
     document.getElementById('results-bar').innerHTML = `
-        <div class="result-box"><div class="result-label">Tipo</div><div class="result-value" style="color:${tipoColor}">${clasificacion.tipo}</div><div class="result-sublabel" style="color:${tipoColor}">${Math.abs(mhka).toFixed(1)}°</div></div>
-        <div class="result-box"><div class="result-label">Severidad</div><div class="result-value" style="color:${sevColorVar}">${clasificacion.severidad}</div><div class="result-sublabel" style="color:${sevColorVar}">|mHKA| = ${Math.abs(mhka).toFixed(1)}°</div></div>
-        <div class="result-box"><div class="result-label">IAD%</div><div class="result-value">${akuma.iadPct}%</div><div class="result-sublabel" style="color:var(--amber)">Intra-articular</div></div>
-        <div class="result-box"><div class="result-label">EAD%</div><div class="result-value">${akuma.eadPct}%</div><div class="result-sublabel" style="color:var(--blue)">${akuma.eadPct > 0 ? (akuma.tPct >= 80 ? 'Tibial' : akuma.fPct >= 80 ? 'Femoral' : 'Tibial + Femoral') : 'Extra-articular'}</div></div>
-        <div class="result-box highlight"><div class="result-label">Indicación</div><div class="result-value" style="font-size:16px">${diag.recoName}</div><div class="result-sublabel">${diag.recoVariant ? diag.recoVariant.split('(')[0].trim() : ''}</div></div>
+        <div class="result-box"><div class="result-label">Alineación</div><div class="result-value" style="color:${tipoColor}">${clasificacion.tipo}</div><div class="result-sublabel" style="color:${tipoColor}">mHKA ${mhka.toFixed(1)}°</div></div>
+        <div class="result-box"><div class="result-label">Severidad</div><div class="result-value" style="color:${sevColorVar}">${clasificacion.severidad}</div><div class="result-sublabel" style="color:${sevColorVar}">${Math.abs(mhka).toFixed(1)}° de desviación</div></div>
+        <div class="result-box"><div class="result-label">Intra-articular</div><div class="result-value">${akuma.iadPct}%</div><div class="result-sublabel" style="color:var(--amber)">JLCA ${_jlca}°</div></div>
+        <div class="result-box"><div class="result-label">Extra-articular</div><div class="result-value">${akuma.eadPct}%</div><div class="result-sublabel" style="color:var(--blue)">${eadLabel}</div></div>
+        <div class="result-box"><div class="result-label">CPAK</div><div class="result-value">Tipo ${cpak.type}</div><div class="result-sublabel">${cpak.hkaCat === 'Neutral' ? 'Neutro' : cpak.hkaCat === 'Varus' ? 'Varo' : 'Valgo'} · ${cpak.jloCat === 'Neutral' ? 'JLO Neutro' : cpak.jloCat}</div><a class="cpak-link" href="${cpakUrl}" target="_blank" title="Abrir calculadora CPAK"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/><rect x="8" y="5" width="8" height="3" rx="0.5"/></svg>CPAK</a></div>
+        <div class="result-box highlight" style="grid-column:1/-1"><div class="result-label">Indicación</div><div class="result-value" style="font-size:22px">${diag.recoName}</div><div class="result-sublabel">${diag.recoVariant ? diag.recoVariant.split('(')[0].trim() : ''}</div></div>
     `;
 
     // Component analysis — with varo/valgo direction
