@@ -1560,6 +1560,7 @@ function renderPhase1() {
     // Show phase 1, show phase 2 input
     document.getElementById('phase1-section').classList.add('visible');
     document.getElementById('phase2-section').style.display = '';
+    _hasCalculated = true;
 }
 
 // ─────────────────────────────────────────────
@@ -1690,10 +1691,15 @@ function onCalcularCorreccion() {
 // ─────────────────────────────────────────────
 const analysisInputs = ['inp-edad', 'inp-mhka', 'inp-mldfa', 'inp-mmpta', 'inp-jlca'];
 
-// Enter key triggers calculation from any input
+// After first "Calcular", recalculate live on any input change
+let _hasCalculated = false;
 analysisInputs.forEach(id => {
-    document.getElementById(id).addEventListener('keydown', function(e) {
+    const el = document.getElementById(id);
+    el.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') { e.preventDefault(); renderPhase1(); }
+    });
+    el.addEventListener('input', function() {
+        if (_hasCalculated) renderPhase1();
     });
 });
 
@@ -1708,6 +1714,7 @@ function onLimpiar() {
     document.getElementById('btn-aplicar-akuma').disabled = true;
     window._phase1 = null;
     window._lastResult = null;
+    _hasCalculated = false;
     mostrarToast('Formulario limpiado');
 }
 
