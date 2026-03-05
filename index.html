@@ -1533,8 +1533,8 @@ function renderPhase1() {
         ovJlca.className = `angle-overlay angle-jlca${jlcaStatus === 'amber' ? ' warn' : jlcaStatus === 'red' ? ' danger' : ''}`;
     }
 
-    // D3 Contribution bars
-    renderD3Bars(akuma, _mldfa, _mmpta);
+    // D3 Contribution bars (wrapped — no bloquea si D3 CDN falla)
+    try { renderD3Bars(akuma, _mldfa, _mmpta); } catch(e) { console.warn('D3 no disponible:', e.message); }
 
     const eadSection = document.getElementById('ead-detail-section');
     if (akuma.absEAD > 0) { eadSection.style.display = ''; }
@@ -1780,7 +1780,7 @@ function applyTheme(dark) {
         btnTheme.textContent = '\uD83C\uDF19';
     }
     // Re-render D3 charts with new theme colors
-    if (window._phase1) renderD3Bars(window._phase1.akuma, window._phase1.mldfa, window._phase1.mmpta);
+    try { if (window._phase1) renderD3Bars(window._phase1.akuma, window._phase1.mldfa, window._phase1.mmpta); } catch(e) {}
 }
 
 function getAutoTheme() {
