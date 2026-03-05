@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deformidades Coronales - Análisis de Alineación</title>
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Deformidades">
+    <meta name="theme-color" content="#1a3a5c">
+    <meta name="description" content="Análisis de deformidades coronales del miembro inferior con algoritmo AKUMA, diagnóstico diferencial y método Micicoi">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #f1f5f9; --surface: #ffffff; --surface2: #e8eef4;
+            --border: #e2e8f0; --border-light: #e5e7eb;
+            --accent: #1a3a5c; --accent-light: #eef2f7; --accent-hover: #14304f;
+            --text: #222; --text-muted: #555; --text-light: #888;
+            --green: #16a34a; --green-light: #dcfce7;
+            --amber: #c0540a; --amber-light: #fef3c7;
+            --red: #dc2626; --red-light: #fee2e2;
+            --blue: #3b82f6; --blue-light: #eff6ff;
+            --purple: #7c3aed; --purple-light: #f5f3ff;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            --shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --radius-sm: 8px; --radius: 16px; --radius-lg: 24px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; padding: 30px 20px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .app-container { max-width: 900px; margin: 0 auto; }
+
+        /* ── BACK HOME ── */
+        .back-home {
+            position: fixed; top: 10px; left: 10px;
+            display: inline-flex; align-items: center; gap: 4px;
+            font-family: 'SF Mono', 'Consolas', monospace; font-size: 11px; letter-spacing: 0.05em;
+            color: var(--text-muted); text-decoration: none;
+            padding: 6px 12px; border-radius: 999px;
+            border: 1.5px solid var(--border); background: var(--surface);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            transition: border-color 0.2s, color 0.2s; z-index: 100;
+        }
+        .back-home:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ── HEADER ── */
+        .app-header {
+            text-align: center; margin-bottom: 28px; position: relative;
+            background: linear-gradient(135deg, #0f2240 0%, #1a3a5c 50%, #234e77 100%);
+            color: white; padding: 40px 32px 32px;
+            border-radius: var(--radius-lg); overflow: hidden;
+            box-shadow: 0 8px 32px rgba(15,34,64,0.25);
+            animation: fadeInUp 0.6s ease-out;
+        }
+        .app-header::before {
+            content: ''; position: absolute; top: -80px; right: -30px;
+            width: 250px; height: 250px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%);
+            filter: blur(40px);
+        }
+        .app-header::after {
+            content: ''; position: absolute; bottom: -60px; left: 15%;
+            width: 200px; height: 200px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+            filter: blur(40px);
+        }
+        .app-header h1 {
+            font-family: 'Lora', serif; color: white; position: relative;
+            font-size: clamp(1.3rem, 3vw, 1.7rem); font-weight: 700; margin-bottom: 4px;
+        }
+        .app-header p { font-size: 13px; color: rgba(255,255,255,0.6); position: relative; }
+
+        [data-theme="dark"] .app-header {
+            background: linear-gradient(135deg, #0a1628 0%, #111827 50%, #1a2744 100%);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── THEME TOGGLE ── */
+        .theme-toggle {
+            position: absolute; top: 12px; right: 12px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: border-color 0.2s, background 0.2s; z-index: 1; color: white;
+        }
+        .theme-toggle:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.12); }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface); border: 1px solid var(--border-light);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 24px; margin-bottom: 20px;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        .section-title {
+            font-size: 12px; font-weight: 700; color: var(--accent);
+            text-transform: uppercase; letter-spacing: 1px;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 6px; margin-bottom: 18px;
+        }
+
+        /* ── INPUTS (compactos) ── */
+        .input-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+            margin-bottom: 4px;
+        }
+        .input-group { margin-bottom: 6px; }
+        .input-group label {
+            font-size: 10px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 2px; display: block;
+        }
+        .input-group input {
+            width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+            padding: 8px 10px; font-size: 15px; font-family: 'Inter', Arial, sans-serif;
+            font-weight: 600; color: var(--text); text-align: center;
+            transition: border-color 0.2s; background: var(--surface);
+        }
+        .input-row-3 {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+            margin-bottom: 4px;
+        }
+        .input-group input::placeholder { color: #bbb; font-weight: 400; }
+        .input-group input:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(26,58,92,0.10);
+        }
+        .input-hint {
+            font-size: 10px; color: var(--text-light); margin-top: 3px;
+        }
+
+        /* ── BUTTONS ── */
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+        .btn-reset {
+            border: 1.5px dashed var(--border); background: transparent;
+            color: var(--text-muted); border-radius: 8px; padding: 10px 16px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
+        }
+        .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-primary {
+            background: var(--accent); color: white; border: none;
+            border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
+        }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+        .btn-danger {
+            background: transparent; color: var(--red); border: 1.5px solid var(--red);
+            border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
+        }
+        .btn-danger:hover { background: var(--red); color: white; }
+        .btn-examples {
+            background: transparent; color: var(--purple); border: 1.5px solid var(--purple);
+            border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
+            position: relative;
+        }
+        .btn-examples:hover { background: var(--purple); color: white; }
+        .btn-green {
+            background: var(--green); color: white; border: none;
+            border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
+        }
+        .btn-green:hover { background: #15803d; transform: translateY(-1px); }
+
+        .examples-dropdown {
+            display: none; position: absolute; bottom: 100%; left: 0; right: 0;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; box-shadow: var(--shadow-hover);
+            margin-bottom: 4px; z-index: 100; overflow: hidden; min-width: 260px;
+        }
+        .examples-dropdown.open { display: block; }
+        .example-item {
+            padding: 10px 14px; font-size: 12px; font-weight: 600;
+            color: var(--text); cursor: pointer; transition: background 0.15s;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .example-item:last-child { border-bottom: none; }
+        .example-item:hover { background: var(--accent-light); }
+        .example-item span { font-size: 10px; color: var(--text-light); display: block; margin-top: 2px; }
+
+        /* ── GLOSSARY ── */
+        .glossary-toggle {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 600; color: var(--accent);
+            cursor: pointer; padding: 6px 14px; border-radius: 8px;
+            background: var(--accent-light); border: none;
+            transition: all 0.2s; margin-bottom: 14px;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+        .glossary-toggle:hover { background: var(--accent); color: white; }
+        .glossary-toggle svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; transition: transform 0.3s; }
+        .glossary-toggle.open svg { transform: rotate(180deg); }
+        .glossary-content {
+            display: none; padding: 14px; background: var(--surface2);
+            border-radius: var(--radius-sm); margin-bottom: 14px;
+            font-size: 12px; line-height: 1.8; color: var(--text-muted);
+        }
+        .glossary-content.visible { display: block; }
+        .glossary-content dt { font-weight: 700; color: var(--accent); display: inline; }
+        .glossary-content dd { display: inline; margin: 0; }
+        .glossary-content dd::after { content: ''; display: block; margin-bottom: 2px; }
+
+        /* ── RESULTS BAR ── */
+        .results-section { display: none; }
+        .results-section.visible { display: block; }
+        .results-bar {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 10px; margin-bottom: 20px;
+            animation: fadeInUp 0.6s ease-out both;
+        }
+        .result-box {
+            background: var(--surface); border-radius: 10px;
+            padding: 12px 8px; box-shadow: var(--shadow);
+            text-align: center; border: 1px solid var(--border-light);
+        }
+        .result-box .result-label {
+            font-size: 10px; font-weight: 700; color: var(--text-light);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .result-box .result-value {
+            font-size: 18px; font-weight: 700; color: var(--text); margin: 3px 0 2px;
+        }
+        .result-box .result-sublabel { font-size: 11px; font-weight: 600; }
+        .result-box.highlight {
+            background: var(--accent); border-color: var(--accent); color: white;
+        }
+        .result-box.highlight .result-label { color: rgba(255,255,255,0.65); }
+        .result-box.highlight .result-value { color: white; }
+        .result-box.highlight .result-sublabel { color: rgba(255,255,255,0.75); }
+
+        /* ── INFO ROWS ── */
+        .info-row {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 12px 14px; border-radius: var(--radius-sm);
+            margin-bottom: 8px; font-size: 13px; line-height: 1.6;
+        }
+        .info-row .info-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+        .info-row.blue { background: var(--blue-light); color: #1e40af; }
+        .info-row.green { background: var(--green-light); color: #166534; }
+        .info-row.amber { background: var(--amber-light); color: #92400e; }
+        .info-row.rose { background: var(--red-light); color: #991b1b; }
+        .info-row.purple { background: var(--purple-light); color: #5b21b6; }
+        .info-row.neutral { background: var(--surface2); color: var(--text-muted); }
+
+        /* ── CONTRIBUTION BARS (D3) ── */
+        .contrib-section { margin: 16px 0; }
+        .contrib-label {
+            font-size: 11px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+        }
+        .d3-chart-wrap { width: 100%; overflow: visible; }
+        .d3-chart-wrap svg { display: block; width: 100%; height: auto; }
+        .contrib-legend {
+            display: flex; gap: 16px; margin-top: 6px; font-size: 11px;
+        }
+        .contrib-legend-item { display: flex; align-items: center; gap: 4px; }
+        .contrib-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .d3-tooltip {
+            position: fixed; pointer-events: none;
+            background: var(--surface); color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 8px 12px; font-size: 11px; font-family: 'Inter', sans-serif;
+            box-shadow: var(--shadow); z-index: 9999;
+            opacity: 0; transition: opacity 0.15s; max-width: 220px; line-height: 1.5;
+        }
+        .d3-tooltip.visible { opacity: 1; }
+
+        /* ── RECOMMENDATION BOX ── */
+        .reco-box {
+            border: 2px solid var(--accent); border-radius: var(--radius);
+            padding: 20px; text-align: center; margin: 16px 0;
+        }
+        .reco-type {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-light); margin-bottom: 4px;
+        }
+        .reco-name {
+            font-family: 'Lora', serif; font-size: 1.4rem; font-weight: 700;
+            color: var(--accent); margin-bottom: 4px;
+        }
+        .reco-variant {
+            font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;
+        }
+        .reco-rationale {
+            font-size: 12px; color: var(--text-muted); line-height: 1.6;
+            text-align: left; padding: 12px; background: var(--surface2);
+            border-radius: var(--radius-sm);
+        }
+        .reco-reasons {
+            margin: 6px 0 4px 0; padding-left: 18px; list-style: none;
+        }
+        .reco-reasons li {
+            position: relative; padding: 3px 0 3px 8px;
+        }
+        .reco-reasons li::before {
+            content: '→'; position: absolute; left: -14px; color: var(--red); font-weight: 700;
+        }
+        .reco-reasons small { color: var(--text-light); }
+        .reco-reasons .criterio-limite { font-weight: 700; color: var(--text); }
+        .reco-reasons .criterio-caso { color: var(--red); font-weight: 600; }
+        .reco-reasons .criterio-ok { color: var(--green); font-weight: 600; }
+        .ref-link { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); transition: color 0.2s; }
+        .ref-link:hover { color: var(--blue); border-bottom-color: var(--blue); }
+        [data-theme="dark"] .ref-link { color: var(--accent); }
+        [data-theme="dark"] .ref-link:hover { color: #93c5fd; border-bottom-color: #93c5fd; }
+        [data-theme="dark"] .reco-reasons .criterio-limite { color: var(--text); }
+        .reco-box.uka { border-color: var(--amber); }
+        .reco-box.uka .reco-name { color: var(--amber); }
+        .reco-box.dlo { border-color: var(--purple); }
+        .reco-box.dlo .reco-name { color: var(--purple); }
+        .reco-box.grey { border-color: var(--text-light); border-style: dashed; }
+        .reco-box.grey .reco-name { color: var(--text-muted); }
+
+        /* ── CORRECTION SECTION ── */
+        .correction-card {
+            background: var(--surface); border: 2px solid var(--green);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 18px 24px; margin-bottom: 20px;
+            max-width: 480px; margin-left: auto; margin-right: auto;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+        .correction-card .section-title { color: var(--green); border-bottom-color: var(--green); text-align: center; }
+        .correction-input-row {
+            display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 14px;
+        }
+        .correction-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;
+        }
+        .correction-item {
+            background: var(--surface2); border-radius: var(--radius-sm);
+            padding: 12px; text-align: center;
+        }
+        .correction-item .ci-label {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 4px;
+        }
+        .correction-item .ci-value {
+            font-size: 20px; font-weight: 700; color: var(--accent);
+        }
+        .correction-item .ci-note {
+            font-size: 10px; color: var(--text-light); margin-top: 2px;
+        }
+        .correction-item.warn .ci-value { color: var(--amber); }
+        .correction-item.danger .ci-value { color: var(--red); }
+        .correction-item input.ci-input {
+            font-size: 20px; font-weight: 700; color: var(--accent);
+            text-align: center; background: transparent; border: none;
+            border-bottom: 1.5px dashed var(--border);
+            width: 80px; padding: 0; font-family: 'Inter', sans-serif;
+            outline: none; -moz-appearance: textfield;
+        }
+        .correction-item input.ci-input::-webkit-inner-spin-button,
+        .correction-item input.ci-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .correction-item input.ci-input:focus { border-bottom-color: var(--accent); }
+        .correction-item.warn input.ci-input { color: var(--amber); }
+        .correction-item.danger input.ci-input { color: var(--red); }
+        .ci-input-sm {
+            font-size: 10px; font-weight: 700; color: var(--text-light);
+            text-align: center; background: transparent; border: none;
+            border-bottom: 1px dashed var(--border);
+            width: 32px; padding: 0; font-family: 'Inter', sans-serif;
+            outline: none; -moz-appearance: textfield;
+        }
+        .ci-input-sm::-webkit-inner-spin-button,
+        .ci-input-sm::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .ci-input-sm:focus { border-bottom-color: var(--accent); }
+        .correction-hka-row {
+            background: var(--accent-light); border-radius: var(--radius-sm);
+            padding: 10px; text-align: center; margin-top: 8px;
+            grid-column: 1 / -1;
+        }
+        .correction-hka-row .ci-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 2px; }
+        .correction-hka-row .ci-value { font-size: 20px; font-weight: 700; color: var(--accent); }
+
+        .formula-box {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 14px; background: var(--surface2);
+            border-radius: var(--radius-sm); margin-bottom: 16px;
+            font-size: 15px; font-weight: 700; color: var(--text);
+            flex-wrap: wrap;
+        }
+        .formula-box .f-op { color: var(--text-light); font-size: 18px; }
+        .formula-box .f-val { color: var(--accent); }
+        .formula-box .f-result {
+            color: white; background: var(--green);
+            padding: 4px 12px; border-radius: 6px;
+        }
+
+        .micicoi-box {
+            border: 1.5px dashed var(--purple); border-radius: var(--radius-sm);
+            padding: 12px 14px; margin: 12px 0; background: var(--purple-light);
+        }
+        .micicoi-box .micicoi-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--purple); margin-bottom: 4px;
+        }
+        .micicoi-box p { font-size: 12px; color: #5b21b6; line-height: 1.6; }
+
+        /* ── STEP CARDS ── */
+        .step-cards { display: flex; flex-direction: column; gap: 12px; }
+        .step-card {
+            display: flex; gap: 14px; padding: 14px;
+            border-radius: var(--radius-sm); background: var(--surface2);
+            border: 1px solid var(--border-light);
+            animation: fadeInUp 0.4s ease-out both;
+        }
+        .step-card:nth-child(1) { animation-delay: 0.1s; }
+        .step-card:nth-child(2) { animation-delay: 0.2s; }
+        .step-card:nth-child(3) { animation-delay: 0.3s; }
+        .step-card:nth-child(4) { animation-delay: 0.4s; }
+        .step-card:nth-child(5) { animation-delay: 0.5s; }
+        .step-number {
+            flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+            background: var(--accent); color: white;
+            font-size: 13px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .step-title {
+            font-family: 'Lora', serif; font-size: 14px; font-weight: 700;
+            color: var(--text); margin-bottom: 6px;
+        }
+        .step-text { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+        .val {
+            font-weight: 700; padding: 1px 6px; border-radius: 4px;
+            display: inline; white-space: nowrap;
+        }
+        .val-accent { color: var(--accent); background: var(--accent-light); }
+        .val-green { color: var(--green); background: var(--green-light); }
+        .val-amber { color: var(--amber); background: var(--amber-light); }
+        .val-red { color: var(--red); background: var(--red-light); }
+        .val-purple { color: var(--purple); background: var(--purple-light); }
+
+        /* ── AKUMA FLOWCHART (TREE LAYOUT) ── */
+        .akuma-chart { margin: 16px 0; }
+        .akuma-tree { display: flex; flex-direction: column; align-items: center; gap: 0; }
+        .akuma-top-node {
+            background: var(--accent); color: white; padding: 10px 24px;
+            border-radius: 20px; font-size: 13px; font-weight: 600; text-align: center;
+        }
+        /* Connector: vertical line down + horizontal bar + 3 vertical drops */
+        .akuma-connector {
+            display: flex; flex-direction: column; align-items: center; width: 100%;
+        }
+        .akuma-vline { width: 2px; height: 16px; background: var(--border); margin: 0 auto; }
+        .akuma-hline {
+            width: 80%; max-width: 520px; height: 2px; background: var(--border);
+            position: relative;
+        }
+        .akuma-branches {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+            width: 100%; max-width: 580px;
+        }
+        .akuma-branch {
+            display: flex; flex-direction: column; align-items: center; gap: 0;
+            transition: all 0.4s ease;
+        }
+        .akuma-cond {
+            padding: 6px 10px; border-radius: 8px; font-size: 11px;
+            font-weight: 600; text-align: center; width: 100%;
+            background: var(--blue-light); color: #1e40af; border: 1.5px solid var(--blue);
+        }
+        .akuma-result {
+            padding: 8px 10px; border-radius: 10px; font-size: 13px;
+            font-weight: 700; text-align: center; width: 100%;
+        }
+        .akuma-result-uka { background: var(--amber-light); color: var(--amber); border: 2px solid var(--amber); }
+        .akuma-result-grey { background: var(--surface2); color: var(--text-muted); border: 2px dashed var(--text-light); }
+        .akuma-result-osteo { background: #dbeafe; color: #1d4ed8; border: 2px solid #3b82f6; }
+        .akuma-desc {
+            font-size: 10px; color: var(--text-muted); text-align: center;
+            max-width: 170px; line-height: 1.4; margin: 0 auto;
+        }
+        /* Sub-branches for osteotomy (HTO/DFO/DLO) */
+        .akuma-sub-branches {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; width: 100%;
+        }
+        .akuma-sub-result {
+            padding: 8px 6px; border-radius: 10px; font-size: 14px;
+            font-weight: 700; text-align: center;
+        }
+        .akuma-sub-result.hto { background: var(--accent-light); color: var(--accent); border: 1.5px solid var(--accent); }
+        .akuma-sub-result.dfo { background: var(--accent-light); color: var(--accent); border: 1.5px solid var(--accent); }
+        .akuma-sub-result.dlo { background: var(--purple-light); color: var(--purple); border: 1.5px solid var(--purple); }
+        .akuma-sub-cond {
+            font-size: 11px; font-weight: 600; color: var(--text-muted);
+            text-align: center; padding: 3px 0; white-space: nowrap;
+        }
+        /* Dimmed / Highlighted states */
+        .akuma-branch.dimmed { opacity: 0.15; filter: grayscale(1); }
+        .akuma-top-node.dimmed { opacity: 0.15; filter: grayscale(1); }
+        .akuma-top-node.highlighted { box-shadow: 0 0 0 3px rgba(59,130,246,0.3); }
+        .akuma-branch.highlighted .akuma-result-uka { box-shadow: 0 0 0 3px rgba(192,84,10,0.3); }
+        .akuma-branch.highlighted .akuma-result-grey { box-shadow: 0 0 0 3px rgba(100,116,139,0.3); }
+        .akuma-branch.highlighted .akuma-result-osteo { box-shadow: 0 0 0 3px rgba(59,130,246,0.3); }
+        .akuma-sub-result.dimmed { opacity: 0.15; filter: grayscale(1); }
+        .akuma-sub-result.highlighted { box-shadow: 0 0 0 3px rgba(26,58,92,0.25); }
+        .akuma-sub-result.highlighted.dlo { box-shadow: 0 0 0 3px rgba(124,58,237,0.3); }
+        .akuma-actions {
+            display: flex; align-items: center; gap: 16px; justify-content: center; margin-top: 16px;
+        }
+        .btn-aplicar {
+            background: var(--accent); color: white; border: none;
+            border-radius: 8px; padding: 8px 20px; font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-aplicar:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn-aplicar:disabled { opacity: 0.4; cursor: not-allowed; }
+        .link-reset-akuma {
+            font-size: 12px; font-weight: 600; color: var(--text-light);
+            cursor: pointer; text-decoration: underline; transition: color 0.2s;
+        }
+        .link-reset-akuma:hover { color: var(--accent); }
+
+        /* ── COPY BUTTON ── */
+        .btn-copy {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 8px;
+            font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: all 0.2s; border: 1.5px solid var(--accent);
+            background: transparent; color: var(--accent);
+        }
+        .btn-copy:hover { background: var(--accent); color: white; }
+        .btn-copy svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        /* ── FOOTER ── */
+        .app-footer { text-align: center; flex-shrink: 0; padding: 8px 0; }
+        .app-footer span { font-size: 0.7rem; color: var(--text-light); letter-spacing: 0.03em; }
+
+        /* ── TOAST ── */
+        .toast-banner {
+            position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #7c3aed; color: white;
+            padding: 12px 28px; border-radius: 10px;
+            font-size: 0.95rem; font-weight: 600; font-family: 'Inter', Arial, sans-serif;
+            box-shadow: 0 8px 32px rgba(124,58,237,0.30);
+            z-index: 9999; opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+            pointer-events: none; display: flex; align-items: center; gap: 8px;
+        }
+        .toast-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── DARK MODE ── */
+        [data-theme="dark"] {
+            --bg: #111827; --surface: #1f2937; --surface2: #283244;
+            --border: #374151; --border-light: #4b5563;
+            --text: #f1f5f9; --text-muted: #a8b8cc; --text-light: #64748b;
+            --accent: #93c5fd; --accent-hover: #bae0ff; --accent-light: #1e3a5f;
+            --green: #4ade80; --green-light: #14352a;
+            --amber: #fbbf24; --amber-light: #3b2a10;
+            --red: #f87171; --red-light: #3b1010;
+            --blue: #60a5fa; --blue-light: #1e2a4a;
+            --purple: #a78bfa; --purple-light: #2d2050;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);
+            --shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+        }
+        [data-theme="dark"] .info-row.blue { background: #1e2a4a; color: #93c5fd; }
+        [data-theme="dark"] .info-row.green { background: #14352a; color: #4ade80; }
+        [data-theme="dark"] .info-row.amber { background: #3b2a10; color: #fbbf24; }
+        [data-theme="dark"] .info-row.rose { background: #3b1010; color: #f87171; }
+        [data-theme="dark"] .info-row.purple { background: #2d2050; color: #a78bfa; }
+        [data-theme="dark"] .info-row.neutral { background: #283244; color: var(--text-muted); }
+        [data-theme="dark"] .micicoi-box { background: #2d2050; border-color: #a78bfa; }
+        [data-theme="dark"] .micicoi-box .micicoi-title { color: #a78bfa; }
+        [data-theme="dark"] .micicoi-box p { color: #c4b5fd; }
+        [data-theme="dark"] .reco-rationale { background: #283244; }
+        [data-theme="dark"] .correction-card { border-color: var(--green); }
+        [data-theme="dark"] .correction-card .section-title { color: var(--green); border-bottom-color: var(--green); }
+        [data-theme="dark"] .glossary-content { background: #283244; }
+        [data-theme="dark"] .glossary-content dt { color: var(--accent); }
+        [data-theme="dark"] .akuma-cond { background: #1e2a4a; color: #93c5fd; border-color: #60a5fa; }
+        [data-theme="dark"] .akuma-top-node { background: #60a5fa; }
+        [data-theme="dark"] .akuma-result-osteo { background: #1e3a5f; color: #93c5fd; border-color: #60a5fa; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .results-bar { grid-template-columns: repeat(3, 1fr); }
+            .correction-grid { grid-template-columns: 1fr 1fr; }
+            .akuma-branches { grid-template-columns: 1fr; gap: 16px; }
+            .akuma-hline { display: none; }
+        }
+        @media (max-width: 600px) {
+            .back-home { padding: 4px 8px; font-size: 10px; top: 6px; left: 6px; }
+            .app-header { padding: 32px 20px 24px; border-radius: var(--radius); }
+            .app-header::before, .app-header::after { display: none; }
+            .theme-toggle { width: 36px; height: 36px; font-size: 1.1rem; top: 8px; right: 8px; }
+            .input-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .input-row-3 { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+            .card { padding: 18px 16px; }
+            .correction-card { padding: 18px 16px; }
+            .results-bar { grid-template-columns: repeat(2, 1fr); }
+            .results-bar .result-box:last-child { grid-column: 1 / -1; }
+            .correction-grid { grid-template-columns: 1fr; }
+            .formula-box { font-size: 13px; }
+            .reco-name { font-size: 1.1rem; }
+            .step-card { padding: 12px; gap: 10px; }
+            .akuma-sub-branches { grid-template-columns: 1fr; gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <a class="back-home" href="https://jmacot.github.io/" title="Volver al inicio">&#8592; Inicio</a>
+
+    <div class="app-header">
+        <button class="theme-toggle" id="btn-theme" title="Cambiar tema"></button>
+        <h1>Deformidades Coronales</h1>
+        <p>Análisis de alineación coronal del miembro inferior</p>
+    </div>
+
+    <!-- ─── GLOSSARY ─── -->
+    <button class="glossary-toggle" id="btn-glossary" onclick="toggleGlossary()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Glosario de siglas
+    </button>
+    <div class="glossary-content" id="glossary-content">
+        <dl>
+            <dt>mHKA</dt> <dd> — Ángulo mecánico cadera-rodilla-tobillo. Eje mecánico del miembro inferior. Negativo = varo, positivo = valgo.</dd>
+            <dt>mLDFA</dt> <dd> — Ángulo femoral distal lateral mecánico. Normal: 84-90° (típico 87°). Mide la orientación del fémur distal.</dd>
+            <dt>mMPTA</dt> <dd> — Ángulo tibial proximal medial mecánico. Normal: 84-90° (típico 87°). Mide la orientación de la tibia proximal.</dd>
+            <dt>JLCA</dt> <dd> — Ángulo de convergencia de la línea articular. Normal: 0-2°. Refleja el desgaste articular y la laxitud ligamentosa.</dd>
+            <dt>IAD</dt> <dd> — Deformidad intra-articular. Componente de la deformidad que proviene del interior de la articulación (= JLCA).</dd>
+            <dt>EAD</dt> <dd> — Deformidad extra-articular. Componente óseo de la deformidad (= LDFA - MPTA).</dd>
+            <dt>GD</dt> <dd> — Deformidad global. Suma de IAD + |EAD|. Permite calcular los porcentajes IAD% y EAD%.</dd>
+            <dt>TD / FD</dt> <dd> — Deformidad tibial / femoral. Contribución de cada hueso al componente extra-articular.</dd>
+            <dt>JLO</dt> <dd> — Oblicuidad de la línea articular. |mMPTA - mLDFA|. Límite seguro: &lt;5°.</dd>
+            <dt>HTO</dt> <dd> — Osteotomía tibial alta (High Tibial Osteotomy).</dd>
+            <dt>DFO</dt> <dd> — Osteotomía femoral distal (Distal Femoral Osteotomy).</dd>
+            <dt>DLO</dt> <dd> — Osteotomía de doble nivel (Double Level Osteotomy).</dd>
+            <dt>UKA</dt> <dd> — Artroplastia unicompartimental de rodilla (Unicompartmental Knee Arthroplasty).</dd>
+        </dl>
+    </div>
+
+    <!-- ─── INPUT CARD ─── -->
+    <div class="card">
+        <div class="section-title">Parámetros radiológicos</div>
+        <div class="input-row">
+            <div class="input-group">
+                <label>Edad</label>
+                <input type="number" id="inp-edad" min="18" max="100" step="1" placeholder="45" inputmode="numeric">
+            </div>
+            <div class="input-group">
+                <label>mHKA</label>
+                <input type="number" id="inp-mhka" min="160" max="200" step="0.1" placeholder="180" inputmode="decimal">
+                <div class="input-hint">&lt;180° = varo / &gt;180° = valgo</div>
+            </div>
+        </div>
+        <div class="input-row-3">
+            <div class="input-group">
+                <label>mLDFA</label>
+                <input type="number" id="inp-mldfa" min="75" max="100" step="0.1" placeholder="87" inputmode="decimal">
+            </div>
+            <div class="input-group">
+                <label>mMPTA</label>
+                <input type="number" id="inp-mmpta" min="75" max="100" step="0.1" placeholder="87" inputmode="decimal">
+            </div>
+            <div class="input-group">
+                <label>JLCA</label>
+                <input type="number" id="inp-jlca" min="0" max="15" step="0.1" placeholder="1" inputmode="decimal">
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-reset" onclick="onLimpiar()">Restablecer</button>
+            <div style="position:relative">
+                <button class="btn-examples" onclick="toggleExamples()" id="btn-ej" style="width:100%">Ejemplos</button>
+                <div class="examples-dropdown" id="dropdown-ej">
+                    <div class="example-item" onclick="cargarEjemplo(0)">Varo tibial típico<span>mHKA 174° / mLDFA 87 / mMPTA 82 / JLCA 1 / 45a</span></div>
+                    <div class="example-item" onclick="cargarEjemplo(1)">Valgo femoral<span>mHKA 188° / mLDFA 80 / mMPTA 87 / JLCA 1 / 50a</span></div>
+                    <div class="example-item" onclick="cargarEjemplo(2)">Deformidad combinada (DLO)<span>mHKA 168° / mLDFA 93 / mMPTA 80 / JLCA 3 / 42a</span></div>
+                    <div class="example-item" onclick="cargarEjemplo(3)">Varo intra-articular (UKA)<span>mHKA 175° / mLDFA 87 / mMPTA 87 / JLCA 5 / 60a</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── REAL-TIME ANALYSIS (Fase 1) ─── -->
+    <div class="results-section" id="phase1-section">
+
+        <!-- Results Bar -->
+        <div class="results-bar" id="results-bar"></div>
+
+        <!-- Análisis de Componentes -->
+        <div class="card" style="animation-delay:0.15s">
+            <div class="section-title">Análisis de componentes (AKUMA)</div>
+            <div id="component-rows"></div>
+            <div class="contrib-section">
+                <div class="contrib-label">Distribución</div>
+                <div class="d3-chart-wrap" id="bar-iad-ead"></div>
+            </div>
+            <div class="contrib-section" id="ead-detail-section" style="display:none">
+                <div class="contrib-label">Contribución</div>
+                <div class="d3-chart-wrap" id="bar-tf"></div>
+            </div>
+        </div>
+
+        <!-- Diagnóstico Diferencial -->
+        <div class="card" style="animation-delay:0.2s">
+            <div class="section-title">Diagnóstico diferencial</div>
+            <div id="reco-container"></div>
+            <div id="warning-rows"></div>
+        </div>
+
+        <!-- AKUMA Flowchart -->
+        <div class="card" style="animation-delay:0.25s">
+            <div class="section-title">Algoritmo AKUMA (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank" style="color:inherit;border-bottom-color:var(--text-light)">Ollivier et al. KSSTA 2025</a>)</div>
+            <div class="akuma-chart" id="akuma-chart">
+                <div class="akuma-tree">
+                    <div class="akuma-top-node" id="ak-top">Calcular GD, IAD%, EAD%</div>
+                    <div class="akuma-connector">
+                        <div class="akuma-vline"></div>
+                        <div class="akuma-hline"></div>
+                    </div>
+                    <div class="akuma-branches">
+                        <!-- Rama izquierda: UKA -->
+                        <div class="akuma-branch" id="ak-branch-uka">
+                            <div class="akuma-vline"></div>
+                            <div class="akuma-cond" id="ak-cond-iad">IAD% &gt; 60%</div>
+                            <div class="akuma-vline"></div>
+                            <div class="akuma-result akuma-result-uka" id="ak-uka">UKA</div>
+                            <div class="akuma-desc">Deformidad intra-articular predominante. Prótesis unicompartimental.</div>
+                        </div>
+                        <!-- Rama central: Zona gris -->
+                        <div class="akuma-branch" id="ak-branch-grey">
+                            <div class="akuma-vline"></div>
+                            <div class="akuma-cond" id="ak-cond-grey">IAD% &lt; 60% y EAD% &lt; 60%</div>
+                            <div class="akuma-vline"></div>
+                            <div class="akuma-result akuma-result-grey" id="ak-grey">Zona gris</div>
+                            <div class="akuma-desc">Decisión compartida (edad, actividad, grado artrosis, integridad ligamentosa, preferencia del paciente).</div>
+                        </div>
+                        <!-- Rama derecha: Osteotomía -->
+                        <div class="akuma-branch" id="ak-branch-osteo">
+                            <div class="akuma-vline"></div>
+                            <div class="akuma-cond" id="ak-cond-ead">EAD% &gt; 60%</div>
+                            <div class="akuma-vline"></div>
+                            <div class="akuma-result akuma-result-osteo" id="ak-osteo">Osteotomía</div>
+                            <div class="akuma-vline"></div>
+                            <div class="akuma-sub-branches">
+                                <div style="text-align:center">
+                                    <div class="akuma-sub-cond">T% &ge; 80%</div>
+                                    <div class="akuma-sub-result hto" id="ak-hto">HTO</div>
+                                </div>
+                                <div style="text-align:center">
+                                    <div class="akuma-sub-cond">F% &ge; 80%</div>
+                                    <div class="akuma-sub-result dfo" id="ak-dfo">DFO</div>
+                                </div>
+                                <div style="text-align:center">
+                                    <div class="akuma-sub-cond">T%&amp;F% &lt; 80%</div>
+                                    <div class="akuma-sub-result dlo" id="ak-dlo">DLO</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="akuma-actions" id="akuma-actions">
+                <button class="btn-aplicar" id="btn-aplicar-akuma" disabled onclick="aplicarCasoAkuma()">Aplicar caso</button>
+                <a class="link-reset-akuma" id="link-reset-akuma" onclick="resetAkumaHighlight()" style="display:none">Restablecer</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── CORRECTION SECTION (Fase 2) ─── -->
+    <div id="phase2-section" style="display:none">
+        <div class="correction-card">
+            <div class="section-title">Planificación de corrección — Método Mikulicz</div>
+            <div class="correction-input-row">
+                <div class="input-group" style="margin-bottom:0">
+                    <label>HKA objetivo (grados)</label>
+                    <input type="number" id="inp-target" min="175" max="190" step="0.1" value="180" placeholder="180" inputmode="decimal">
+                    <div class="input-hint">180° = alineación neutra</div>
+                </div>
+                <button class="btn-green" id="btn-correccion" onclick="onCalcularCorreccion()">Calcular corrección</button>
+            </div>
+            <div id="correction-results" style="display:none">
+                <div id="formula-container"></div>
+                <div id="micicoi-container"></div>
+                <div class="correction-grid" id="correction-grid"></div>
+                <div id="safety-rows"></div>
+                <div style="text-align:right;margin-top:10px">
+                    <button class="btn-copy" onclick="copiarResumen()">
+                        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copiar resumen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Razonamiento Clínico -->
+        <div class="card" id="explanation-card" style="display:none">
+            <div class="section-title">Razonamiento clínico paso a paso</div>
+            <div class="step-cards" id="explanation-container"></div>
+        </div>
+    </div>
+
+    <div class="app-footer"><span>COT — Deformidades Coronales v1.0</span></div>
+    <div id="toast" class="toast-banner"></div>
+    <div id="d3-tooltip" class="d3-tooltip"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script>
+// ─────────────────────────────────────────────
+//  CONSTANTES CLÍNICAS
+// ─────────────────────────────────────────────
+const NORMAL = {
+    mLDFA: { typical: 87, min: 84, max: 90 },
+    mMPTA: { typical: 87, min: 84, max: 90 },
+    JLCA:  { typical: 1, min: 0, max: 2, pathological: 4 },
+    mHKA:  { typical: 0, min: -2, max: 2 }
+};
+
+const TIBIAL_WIDTH = 75;
+
+const EJEMPLOS = [
+    { edad: 45, mhka: -6, mldfa: 87, mmpta: 82, jlca: 1, target: 2 },
+    { edad: 50, mhka: 8,  mldfa: 80, mmpta: 87, jlca: 1, target: 0 },
+    { edad: 42, mhka: -12, mldfa: 93, mmpta: 80, jlca: 3, target: 0 },
+    { edad: 60, mhka: -5, mldfa: 87, mmpta: 87, jlca: 5, target: 0 }
+];
+
+// ─────────────────────────────────────────────
+//  CÁLCULO AKUMA (Ollivier et al. KSSTA 2025)
+// ─────────────────────────────────────────────
+function calcularAKUMA(mHKA, mLDFA, mMPTA, JLCA) {
+    const esVaro = mHKA < 0;
+    const TD = esVaro ? (87 - mMPTA) : (mMPTA - 87);
+    const FD = esVaro ? (mLDFA - 87) : (87 - mLDFA);
+    const IAD = Math.abs(JLCA);
+    const EAD = esVaro ? (mLDFA - mMPTA) : (mMPTA - mLDFA);
+    const absEAD = Math.abs(EAD);
+    const GD = absEAD + IAD;
+
+    let iadPct = 0, eadPct = 0, tPct = 0, fPct = 0;
+    if (GD > 0) {
+        iadPct = Math.round((IAD / GD) * 100);
+        eadPct = Math.round((absEAD / GD) * 100);
+    }
+    if (absEAD > 0) {
+        tPct = Math.round((Math.abs(TD) / absEAD) * 100);
+        fPct = Math.round((Math.abs(FD) / absEAD) * 100);
+    }
+
+    return { TD, FD, IAD, EAD, absEAD, GD, iadPct, eadPct, tPct, fPct, esVaro };
+}
+
+// ─────────────────────────────────────────────
+//  CLASIFICACIÓN
+// ─────────────────────────────────────────────
+function clasificarDeformidad(mHKA) {
+    const abs = Math.abs(mHKA);
+    let tipo, severidad, sevColor;
+    if (mHKA < -1) tipo = 'VARO';
+    else if (mHKA > 1) tipo = 'VALGO';
+    else tipo = 'NEUTRO';
+
+    if (abs < 5) { severidad = 'Leve'; sevColor = 'green'; }
+    else if (abs < 10) { severidad = 'Moderada'; sevColor = 'amber'; }
+    else { severidad = 'Severa'; sevColor = 'red'; }
+
+    return { tipo, severidad, sevColor };
+}
+
+// ─────────────────────────────────────────────
+//  DIAGNÓSTICO DIFERENCIAL
+// ─────────────────────────────────────────────
+function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA) {
+    const { iadPct, eadPct, tPct, fPct, FD, TD, esVaro } = akuma;
+    const warnings = [];
+    let recoType = '', recoName = '', recoVariant = '', rationale = '', recoClass = '';
+
+    // Calcular MPTA postop si HTO aislada (target provisional neutro = 0°)
+    const provisionalTarget = targetHKA !== null ? targetHKA : 0;
+    const correccion = Math.abs(mHKA - provisionalTarget);
+    const mpptaPostHTO = esVaro ? mMPTA + correccion : mMPTA - correccion;
+    const jloPostHTO = Math.abs(mpptaPostHTO - mLDFA);
+
+    // Edad
+    if (edad > 65) {
+        warnings.push('Edad >65 años: considerar artroplastia sobre osteotomía por menor capacidad de remodelación ósea.');
+    }
+    if (edad < 40) {
+        warnings.push('Paciente joven (<40 años): priorizar preservación articular.');
+    }
+
+    // DLO checks (Ollivier et al. KSSTA 2025)
+    const needsDLO = (
+        Math.abs(FD) > 3 ||
+        (esVaro && mLDFA > 90) || (!esVaro && mLDFA < 84) ||
+        mpptaPostHTO > 90 ||
+        jloPostHTO > 5 ||
+        correccion > 12.5
+    );
+
+    if (iadPct > 60) {
+        if (edad > 55) {
+            recoType = 'Artroplastia unicompartimental'; recoName = 'UKA';
+            recoVariant = 'Prótesis unicompartimental medial';
+            rationale = `Deformidad predominantemente intra-articular (IAD ${iadPct}% > 60%). JLCA de ${JLCA}° indica componente articular significativo. Edad ${edad} años (>55) con OA unicompartimental favorece UKA (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>, <a class="ref-link" href="articulos/Goodell-JBJS-2023.pdf" target="_blank">Goodell et al. JBJS 2023</a>).`;
+            recoClass = 'uka';
+        } else {
+            recoType = 'Artroplastia unicompartimental'; recoName = 'UKA';
+            recoVariant = 'Prótesis unicompartimental medial';
+            rationale = `Deformidad predominantemente intra-articular (IAD ${iadPct}% > 60%). JLCA de ${JLCA}° indica desgaste articular. Edad ${edad} años (≤55): UKA preserva estructuras nativas. Considerar decisión compartida con el paciente (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
+            recoClass = 'uka';
+        }
+    } else if (eadPct > 60) {
+        if (fPct >= 80) {
+            recoType = 'Osteotomía femoral distal'; recoName = 'DFO';
+            recoVariant = esVaro ? 'Apertura cuña medial' : 'Cierre cuña lateral';
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente femoral (F% ${fPct}% ≥ 80%). mLDFA ${mLDFA}° desviado del normal (87°). La corrección se realiza a nivel femoral distal.`;
+            recoClass = '';
+        } else if (tPct >= 80 && Math.abs(FD) <= 3 && !needsDLO) {
+            recoType = 'Osteotomía tibial alta'; recoName = 'HTO';
+            recoVariant = esVaro ? 'Apertura cuña medial (MOWHTO)' : 'Cierre cuña lateral (LCWHTO)';
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente tibial (T% ${tPct}%). FD ${FD.toFixed(1)}° ≤ 3° permite HTO aislada sin riesgo excesivo de JLO. MPTA postop estimado: ${mpptaPostHTO.toFixed(1)}°.`;
+            recoClass = '';
+        } else if (needsDLO) {
+            recoType = 'Osteotomía doble nivel'; recoName = 'DLO';
+            const reasons = [];
+            if (Math.abs(FD) > 3) reasons.push(`<span class="criterio-limite">Deformidad femoral &gt; 3°</span> &rarr; <span class="criterio-ok">Caso: ${FD.toFixed(1)}° ✓</span>`);
+            if (esVaro && mLDFA > 90) reasons.push(`<span class="criterio-limite">mLDFA &gt; 90°</span> &rarr; <span class="criterio-ok">Caso: ${mLDFA}° ✓</span>`);
+            if (!esVaro && mLDFA < 84) reasons.push(`<span class="criterio-limite">mLDFA &lt; 84°</span> &rarr; <span class="criterio-ok">Caso: ${mLDFA}° ✓</span>`);
+            if (mpptaPostHTO > 90) reasons.push(`<span class="criterio-limite">mMPTA postop HTO &gt; 90°</span> &rarr; <span class="criterio-ok">Caso: ${mpptaPostHTO.toFixed(1)}° ✓</span><br><small>ESSKA permite hasta 93° (<a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a>)</small>`);
+            if (jloPostHTO > 5) reasons.push(`<span class="criterio-limite">JLO postop HTO &gt; 5°</span> &rarr; <span class="criterio-ok">Caso: ${jloPostHTO.toFixed(1)}° ✓</span><br><small><a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a></small>`);
+            if (correccion > 12.5) reasons.push(`<span class="criterio-limite">Corrección total &gt; 12.5°</span> &rarr; <span class="criterio-ok">Caso: ${correccion.toFixed(1)}° ✓</span>`);
+            recoVariant = 'DFO + HTO (típicamente DFO primero)';
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) · Contribución tibial ${tPct}% · Contribución femoral ${fPct}%<br><br><strong>Criterios para DLO — ¿Se cumplen?</strong><ul class="reco-reasons">${reasons.map(r => '<li>' + r + '</li>').join('')}</ul><small>Refs: <a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a> · <a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a> · <a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a></small>`;
+            recoClass = 'dlo';
+        } else {
+            recoType = 'Osteotomía tibial alta'; recoName = 'HTO';
+            recoVariant = esVaro ? 'Apertura cuña medial (MOWHTO)' : 'Cierre cuña lateral (LCWHTO)';
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) con contribuciones mixtas (T% ${tPct}%, F% ${fPct}%). FD dentro de límites aceptables. MPTA postop estimado: ${mpptaPostHTO.toFixed(1)}° (aceptable).`;
+            recoClass = '';
+        }
+    } else {
+        recoType = 'Zona gris — Decisión compartida'; recoName = 'KO / UKA';
+        recoVariant = 'Considerar factores individuales del paciente';
+        rationale = `IAD ${iadPct}% y EAD ${eadPct}%: ninguno supera el 60%. Ambas opciones (osteotomía y UKA) ofrecen potencial comparable. La decisión debe basarse en: edad (${edad}a), nivel de actividad, grado de artrosis, integridad ligamentosa y preferencia del paciente (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
+        recoClass = 'grey';
+    }
+
+    if (mpptaPostHTO > 95 && recoName !== 'UKA' && recoName !== 'DLO') {
+        warnings.push(`MPTA postop estimado ${mpptaPostHTO.toFixed(1)}° > 95°: alto riesgo de sobrecarga compartimento lateral.`);
+    }
+
+    return { recoType, recoName, recoVariant, rationale, recoClass, warnings, mpptaPostHTO, jloPostHTO, needsDLO };
+}
+
+// ─────────────────────────────────────────────
+//  PLANIFICACIÓN DE CORRECCIÓN
+// ─────────────────────────────────────────────
+function planificarCorreccion(mHKA, targetHKA, mLDFA, mMPTA, JLCA, recoName, esVaro) {
+    const correccion = Math.abs(mHKA - targetHKA);
+    let targetMPTA = mMPTA, targetLDFA = mLDFA;
+    let micicoi = false, micicioiReduccion = 0;
+    const safetyWarnings = [];
+
+    if (recoName === 'HTO') {
+        targetMPTA = esVaro ? mMPTA + correccion : mMPTA - correccion;
+        if (targetMPTA > 92 && JLCA > 2) {
+            micicoi = true;
+            micicioiReduccion = JLCA / 2;
+            targetMPTA = targetMPTA - micicioiReduccion;
+        }
+    } else if (recoName === 'DFO') {
+        targetLDFA = esVaro ? mLDFA - correccion : mLDFA + correccion;
+    } else if (recoName === 'DLO') {
+        const tibCorrec = Math.abs(mMPTA - 87);
+        const femCorrec = Math.abs(mLDFA - 87);
+        targetMPTA = esVaro ? mMPTA + tibCorrec : mMPTA - tibCorrec;
+        targetLDFA = esVaro ? mLDFA - femCorrec : mLDFA + femCorrec;
+        const restante = correccion - (tibCorrec + femCorrec);
+        if (restante > 0) targetMPTA += (esVaro ? restante : -restante);
+        if (targetMPTA > 92 && JLCA > 2) {
+            micicoi = true;
+            micicioiReduccion = JLCA / 2;
+            targetMPTA = targetMPTA - micicioiReduccion;
+        }
+    }
+
+    const jloPostop = Math.abs(targetMPTA - targetLDFA);
+    const tibialCorrecAngle = Math.abs(targetMPTA - mMPTA);
+    const wedgeHeight = TIBIAL_WIDTH * Math.tan(tibialCorrecAngle * Math.PI / 180);
+
+    if (targetMPTA > 95) safetyWarnings.push(`MPTA postop ${targetMPTA.toFixed(1)}° > 95°: riesgo elevado de sobrecarga lateral.`);
+    if (jloPostop > 5) safetyWarnings.push(`JLO postop ${jloPostop.toFixed(1)}° > 5°: oblicuidad de línea articular excesiva.`);
+    if (correccion > 15) safetyWarnings.push(`Corrección de ${correccion.toFixed(1)}° excesiva (>15°). Considerar procedimiento en 2 tiempos.`);
+
+    return {
+        correccion, targetMPTA, targetLDFA, jloPostop,
+        wedgeHeight, micicoi, micicioiReduccion, safetyWarnings, tibialCorrecAngle
+    };
+}
+
+// ─────────────────────────────────────────────
+//  GENERAR EXPLICACIÓN EDUCATIVA
+// ─────────────────────────────────────────────
+function generarExplicacion(data, clasificacion, akuma, diag, correc) {
+    const steps = [];
+    const v = (val, cls) => `<span class="val val-${cls}">${val}</span>`;
+
+    // Paso 1
+    const tipoLabel = clasificacion.tipo === 'VARO' ? 'negativo (varo)' : clasificacion.tipo === 'VALGO' ? 'positivo (valgo)' : 'dentro de la zona neutra';
+    steps.push({
+        title: 'Clasificación del tipo de deformidad',
+        text: `El mHKA medido es ${v(data.mhka + '°', 'accent')}. Al ser ${tipoLabel}, indica una deformidad en ${v(clasificacion.tipo, clasificacion.sevColor)} de ${v(Math.abs(data.mhka).toFixed(1) + '°', 'accent')} de magnitud, clasificada como ${v(clasificacion.severidad, clasificacion.sevColor)} (leve <5°, moderada 5-10°, severa >10°).`
+    });
+
+    // Paso 2
+    let paso2 = `Según el algoritmo AKUMA (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>):<br>`;
+    paso2 += `\u2022 Deformidad tibial (TD) = 87 - mMPTA = 87 - ${data.mmpta} = ${v(akuma.TD.toFixed(1) + '°', 'accent')}<br>`;
+    paso2 += `\u2022 Deformidad femoral (FD) = mLDFA - 87 = ${data.mldfa} - 87 = ${v(akuma.FD.toFixed(1) + '°', 'accent')}<br>`;
+    paso2 += `\u2022 Deformidad intra-articular (IAD) = JLCA = ${v(akuma.IAD.toFixed(1) + '°', 'amber')}<br>`;
+    paso2 += `\u2022 Deformidad extra-articular (EAD) = LDFA - MPTA = ${data.mldfa} - ${data.mmpta} = ${v(akuma.EAD.toFixed(1) + '°', 'accent')}<br>`;
+    paso2 += `\u2022 Deformidad global (GD) = |EAD| + IAD = ${akuma.absEAD.toFixed(1)} + ${akuma.IAD.toFixed(1)} = ${v(akuma.GD.toFixed(1) + '°', 'accent')}<br>`;
+    paso2 += `\u2022 IAD% = ${v(akuma.iadPct + '%', 'amber')} / EAD% = ${v(akuma.eadPct + '%', 'accent')}`;
+    if (akuma.absEAD > 0) paso2 += `<br>\u2022 T% = ${v(akuma.tPct + '%', 'accent')} / F% = ${v(akuma.fPct + '%', 'purple')}`;
+    steps.push({ title: 'Análisis AKUMA — Localización de deformidad', text: paso2 });
+
+    // Paso 3
+    let paso3 = '';
+    if (akuma.iadPct > 60) {
+        paso3 = `IAD% (${akuma.iadPct}%) supera el 60%, lo que indica una deformidad ${v('predominantemente intra-articular', 'amber')}. El JLCA de ${data.jlca}° refleja desgaste del cartílago y/o laxitud del tejido blando. `;
+        paso3 += `En este contexto, una solución intra-articular como la ${v('UKA', 'amber')} tiende a ofrecer mejores resultados que la osteotomía (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. 2025</a>).`;
+        if (data.edad <= 55) paso3 += ` Dado que la edad es ${data.edad} años, la UKA preserva estructuras nativas para posible conversión futura.`;
+    } else if (akuma.eadPct > 60) {
+        paso3 = `EAD% (${akuma.eadPct}%) supera el 60%, lo que indica una deformidad ${v('predominantemente extra-articular', 'accent')}. La corrección mediante osteotomía es la opción preferida. `;
+        if (diag.recoName === 'DLO') {
+            paso3 += `Sin embargo, se recomienda ${v('osteotomía doble nivel (DLO)', 'purple')} porque: `;
+            if (Math.abs(akuma.FD) > 3) paso3 += `la deformidad femoral (FD ${akuma.FD.toFixed(1)}°) supera 3° (consenso ESSKA); `;
+            if (diag.mpptaPostHTO > 90) paso3 += `una HTO aislada crearía un MPTA postop de ${diag.mpptaPostHTO.toFixed(1)}° (>90°); `;
+            if (diag.jloPostHTO > 5) paso3 += `la JLO postop sería ${diag.jloPostHTO.toFixed(1)}° (>5°); `;
+            paso3 += `(<a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a>, <a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a>).`;
+        } else if (diag.recoName === 'HTO') {
+            paso3 += `La deformidad es predominantemente tibial (T% ${akuma.tPct}%) con FD ${akuma.FD.toFixed(1)}° ≤3°, permitiendo una ${v('HTO aislada', 'accent')} sin riesgo excesivo de JLO.`;
+        } else if (diag.recoName === 'DFO') {
+            paso3 += `La deformidad es predominantemente femoral (F% ${akuma.fPct}%), indicando ${v('DFO', 'accent')}.`;
+        }
+    } else {
+        paso3 = `IAD% (${akuma.iadPct}%) y EAD% (${akuma.eadPct}%): ninguno supera el umbral del 60%. El paciente se encuentra en una ${v('zona gris', 'amber')} donde tanto la osteotomía como la UKA pueden ser opciones válidas. La decisión debe individualizarse.`;
+    }
+    steps.push({ title: 'Diagnóstico diferencial', text: paso3 });
+
+    // Paso 4
+    let paso4 = `Corrección necesaria: |mHKA - objetivo| = |${data.mhka} - ${data.target}| = ${v(correc.correccion.toFixed(1) + '°', 'accent')}.<br>`;
+    if (diag.recoName === 'HTO') {
+        paso4 += `Se aplica a la tibia: mMPTA postop = ${data.mmpta} + ${correc.correccion.toFixed(1)} = ${v((data.mmpta + correc.correccion).toFixed(1) + '°', 'accent')}`;
+        if (correc.micicoi) {
+            paso4 += `<br><br>${v('Método Micicoi aplicado', 'purple')}: como el MPTA postop planificado supera 92° (tipping point, <a class="ref-link" href="https://doi.org/10.1002/ksa.12121" target="_blank">Mabrouk et al. KSSTA 2024</a>), se anticipa efecto seesaw del JLCA. Se reduce la corrección tibial en JLCA/2 = ${data.jlca}/2 = ${v(correc.micicioiReduccion.toFixed(1) + '°', 'purple')}. mMPTA postop ajustado: ${v(correc.targetMPTA.toFixed(1) + '°', 'accent')}.`;
+        }
+    } else if (diag.recoName === 'DFO') {
+        paso4 += `Se aplica al fémur: mLDFA postop = ${data.mldfa} - ${correc.correccion.toFixed(1)} = ${v(correc.targetLDFA.toFixed(1) + '°', 'accent')}`;
+    } else if (diag.recoName === 'DLO') {
+        const tc = Math.abs(data.mmpta - 87);
+        const fc = Math.abs(data.mldfa - 87);
+        paso4 += `Distribución en doble nivel:<br>`;
+        paso4 += `\u2022 Corrección tibial: normalizar mMPTA a 87° = ${v(tc.toFixed(1) + '°', 'accent')}<br>`;
+        paso4 += `\u2022 Corrección femoral: normalizar mLDFA a 87° = ${v(fc.toFixed(1) + '°', 'accent')}`;
+        if (correc.micicoi) {
+            paso4 += `<br><br>${v('Método Micicoi aplicado', 'purple')}: reducción tibial de JLCA/2 = ${v(correc.micicioiReduccion.toFixed(1) + '°', 'purple')}.`;
+        }
+    }
+    paso4 += `<br><br>Altura de cuña tibial estimada: ${TIBIAL_WIDTH}mm × tan(${correc.tibialCorrecAngle.toFixed(1)}°) = ${v(correc.wedgeHeight.toFixed(1) + ' mm', 'accent')}`;
+    steps.push({ title: 'Planificación de la corrección', text: paso4 });
+
+    // Paso 5
+    let paso5 = `Verificación de límites de seguridad postoperatorios:<br>`;
+    paso5 += `\u2022 mMPTA postop: ${v(correc.targetMPTA.toFixed(1) + '°', correc.targetMPTA > 95 ? 'red' : correc.targetMPTA > 93 ? 'amber' : 'green')} (límite: <95°)<br>`;
+    paso5 += `\u2022 mLDFA postop: ${v(correc.targetLDFA.toFixed(1) + '°', (correc.targetLDFA < 84 || correc.targetLDFA > 90) ? 'amber' : 'green')} (normal: 84-90°)<br>`;
+    paso5 += `\u2022 JLO postop: ${v(correc.jloPostop.toFixed(1) + '°', correc.jloPostop > 5 ? 'red' : correc.jloPostop > 4 ? 'amber' : 'green')} (límite: <5°)<br>`;
+    paso5 += `\u2022 Corrección total: ${v(correc.correccion.toFixed(1) + '°', correc.correccion > 15 ? 'red' : correc.correccion > 12 ? 'amber' : 'green')} (límite: <15°)`;
+    if (correc.safetyWarnings.length === 0) paso5 += `<br><br>${v('Todos los parámetros dentro de límites aceptables.', 'green')}`;
+    else paso5 += `<br><br>${v('Atención: se detectan parámetros fuera de rango seguro.', 'red')}`;
+    steps.push({ title: 'Verificación de seguridad', text: paso5 });
+
+    return steps;
+}
+
+// ─────────────────────────────────────────────
+//  D3 CHART HELPERS
+// ─────────────────────────────────────────────
+function getChartTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+        amber: isDark ? '#fbbf24' : '#c0540a',
+        blue: isDark ? '#60a5fa' : '#3b82f6',
+        accent: isDark ? '#93c5fd' : '#1a3a5c',
+        purple: isDark ? '#a78bfa' : '#7c3aed',
+        surface2: isDark ? '#283244' : '#e8eef4',
+        isDark
+    };
+}
+
+function showD3Tooltip(event, html) {
+    d3.select('#d3-tooltip').html(html)
+        .style('left', (event.clientX + 14) + 'px')
+        .style('top', (event.clientY - 10) + 'px')
+        .classed('visible', true);
+}
+function hideD3Tooltip() { d3.select('#d3-tooltip').classed('visible', false); }
+
+function renderContribBar(containerId, segments, legendId) {
+    const container = document.getElementById(containerId);
+    const legend = document.getElementById(legendId);
+    if (!container) return;
+
+    const theme = getChartTheme();
+    const hasSub = segments.some(s => s.barSub);
+    const W = 400, H = hasSub ? 40 : 32, R = 12;
+
+    container.innerHTML = '';
+    const svg = d3.select(container).append('svg')
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet');
+
+    const defs = svg.append('defs');
+    const clipId = containerId + '-clip';
+    defs.append('clipPath').attr('id', clipId)
+        .append('rect').attr('width', W).attr('height', H).attr('rx', R);
+
+    svg.append('rect').attr('width', W).attr('height', H).attr('rx', R)
+        .attr('fill', theme.surface2);
+
+    const g = svg.append('g').attr('clip-path', `url(#${clipId})`);
+
+    let x = 0;
+    segments.forEach((seg, i) => {
+        const w = (seg.pct / 100) * W;
+        const gradId = containerId + '-grad-' + i;
+
+        const grad = defs.append('linearGradient').attr('id', gradId)
+            .attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '0%');
+        const c = d3.color(seg.color);
+        grad.append('stop').attr('offset', '0%').attr('stop-color', c.brighter(0.3));
+        grad.append('stop').attr('offset', '100%').attr('stop-color', c.darker(0.1));
+
+        const segW = Math.max(w, W * 0.02);
+        g.append('rect')
+            .attr('x', x).attr('y', 0)
+            .attr('width', 0).attr('height', H)
+            .attr('fill', `url(#${gradId})`)
+            .style('cursor', 'pointer')
+            .on('mouseover', function(event) {
+                showD3Tooltip(event, '<strong>' + seg.label + '</strong><br>' + seg.pct + '% (' + seg.value + '°)');
+            })
+            .on('mousemove', function(event) {
+                showD3Tooltip(event, '<strong>' + seg.label + '</strong><br>' + seg.pct + '% (' + seg.value + '°)');
+            })
+            .on('mouseout', hideD3Tooltip)
+            .transition().duration(500).delay(i * 100).ease(d3.easeCubicOut)
+            .attr('width', segW);
+
+        if (w > 30) {
+            if (seg.barSub && w > 50) {
+                g.append('text')
+                    .attr('x', x + segW / 2).attr('y', H / 2 - 5)
+                    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+                    .attr('fill', 'rgba(255,255,255,0.95)')
+                    .attr('font-size', '13px').attr('font-weight', '700')
+                    .attr('font-family', 'Inter, sans-serif')
+                    .style('opacity', 0).style('pointer-events', 'none')
+                    .text(seg.pct + '%')
+                    .transition().delay(500 + i * 100).duration(200)
+                    .style('opacity', 1);
+                g.append('text')
+                    .attr('x', x + segW / 2).attr('y', H / 2 + 9)
+                    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+                    .attr('fill', 'rgba(255,255,255,0.7)')
+                    .attr('font-size', '9px').attr('font-weight', '600')
+                    .attr('font-family', 'Inter, sans-serif')
+                    .style('opacity', 0).style('pointer-events', 'none')
+                    .text(seg.barSub)
+                    .transition().delay(500 + i * 100).duration(200)
+                    .style('opacity', 1);
+            } else {
+                g.append('text')
+                    .attr('x', x + segW / 2).attr('y', H / 2 + 1)
+                    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+                    .attr('fill', 'rgba(255,255,255,0.9)')
+                    .attr('font-size', '11px').attr('font-weight', '700')
+                    .attr('font-family', 'Inter, sans-serif')
+                    .style('opacity', 0).style('pointer-events', 'none')
+                    .text(seg.pct + '%')
+                    .transition().delay(500 + i * 100).duration(200)
+                    .style('opacity', 1);
+            }
+        }
+        x += segW;
+    });
+
+    if (legend) {
+        legend.innerHTML = segments.map(s =>
+            '<div class="contrib-legend-item"><div class="contrib-dot" style="background:' + s.color + '"></div>' + s.label + ' ' + s.pct + '%</div>'
+        ).join('');
+    }
+}
+
+function renderD3Bars(akuma, mldfa, mmpta) {
+    const theme = getChartTheme();
+    renderContribBar('bar-iad-ead', [
+        { pct: akuma.iadPct, color: theme.amber, label: 'IAD', barSub: 'IAD', value: akuma.IAD.toFixed(1) },
+        { pct: akuma.eadPct, color: theme.blue, label: 'EAD', barSub: 'EAD', value: akuma.absEAD.toFixed(1) }
+    ], null);
+    if (akuma.absEAD > 0) {
+        // Tibial/Femoral with varo/valgo direction
+        const tibDir = mmpta < 84 ? ' (varo tibial)' : mmpta > 90 ? ' (valgo tibial)' : '';
+        const femDir = mldfa > 90 ? ' (varo femoral)' : mldfa < 84 ? ' (valgo femoral)' : '';
+        renderContribBar('bar-tf', [
+            { pct: akuma.tPct, color: theme.accent, label: 'Tibial' + tibDir, barSub: 'Tibia', value: Math.abs(akuma.TD).toFixed(1) },
+            { pct: akuma.fPct, color: theme.purple, label: 'Femoral' + femDir, barSub: 'Fémur', value: Math.abs(akuma.FD).toFixed(1) }
+        ], null);
+    }
+}
+
+// ─────────────────────────────────────────────
+//  AKUMA FLOWCHART — APLICAR CASO
+// ─────────────────────────────────────────────
+function aplicarCasoAkuma() {
+    if (!window._phase1) return;
+    const { akuma, diag } = window._phase1;
+
+    resetAkumaHighlight();
+
+    // Dim all branches
+    document.querySelectorAll('#akuma-chart .akuma-branch').forEach(el => el.classList.add('dimmed'));
+    document.querySelectorAll('#akuma-chart .akuma-sub-result').forEach(el => el.classList.add('dimmed'));
+
+    // Always highlight top node
+    const top = document.getElementById('ak-top');
+    if (top) top.classList.add('highlighted');
+
+    if (akuma.iadPct > 60) {
+        // UKA branch
+        const b = document.getElementById('ak-branch-uka');
+        if (b) { b.classList.remove('dimmed'); b.classList.add('highlighted'); }
+    } else if (akuma.eadPct > 60) {
+        // Osteotomy branch
+        const b = document.getElementById('ak-branch-osteo');
+        if (b) { b.classList.remove('dimmed'); b.classList.add('highlighted'); }
+        // Highlight specific sub-result
+        if (diag.recoName === 'HTO') {
+            const el = document.getElementById('ak-hto');
+            if (el) { el.classList.remove('dimmed'); el.classList.add('highlighted'); }
+        } else if (diag.recoName === 'DFO') {
+            const el = document.getElementById('ak-dfo');
+            if (el) { el.classList.remove('dimmed'); el.classList.add('highlighted'); }
+        } else if (diag.recoName === 'DLO') {
+            const el = document.getElementById('ak-dlo');
+            if (el) { el.classList.remove('dimmed'); el.classList.add('highlighted'); }
+        }
+    } else {
+        // Grey zone
+        const b = document.getElementById('ak-branch-grey');
+        if (b) { b.classList.remove('dimmed'); b.classList.add('highlighted'); }
+    }
+
+    document.getElementById('link-reset-akuma').style.display = '';
+}
+
+function resetAkumaHighlight() {
+    document.querySelectorAll('#akuma-chart .dimmed, #akuma-chart .highlighted').forEach(el => {
+        el.classList.remove('dimmed', 'highlighted');
+    });
+    document.getElementById('link-reset-akuma').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+//  FASE 1: ANÁLISIS EN TIEMPO REAL
+// ─────────────────────────────────────────────
+function renderPhase1() {
+    const mhkaRaw = parseFloat(document.getElementById('inp-mhka').value);
+    let mhka = !isNaN(mhkaRaw) ? mhkaRaw - 180 : NaN;
+    const mldfa = parseFloat(document.getElementById('inp-mldfa').value);
+    const mmpta = parseFloat(document.getElementById('inp-mmpta').value);
+    const jlca = parseFloat(document.getElementById('inp-jlca').value);
+    const edad = parseFloat(document.getElementById('inp-edad').value);
+
+    // Necesitamos al menos mHKA + (mLDFA o mMPTA) para mostrar algo útil
+    if (isNaN(mhka) || (isNaN(mldfa) && isNaN(mmpta))) {
+        document.getElementById('phase1-section').classList.remove('visible');
+        return;
+    }
+    // Si faltan valores, usar defaults para cálculo parcial
+    const _mldfa = isNaN(mldfa) ? 87 : mldfa;
+    const _mmpta = isNaN(mmpta) ? 87 : mmpta;
+    const _jlca = isNaN(jlca) ? 0 : jlca;
+    const _edad = isNaN(edad) ? 45 : edad;
+
+    const clasificacion = clasificarDeformidad(mhka);
+    const akuma = calcularAKUMA(mhka, _mldfa, _mmpta, _jlca);
+    const diag = diagnosticoDiferencial(akuma, _edad, _mldfa, _mmpta, _jlca, null, mhka);
+
+    // Store for phase 2
+    window._phase1 = { mhka, mldfa: _mldfa, mmpta: _mmpta, jlca: _jlca, edad: _edad, clasificacion, akuma, diag };
+
+    // Results bar (4 boxes, sin corrección)
+    const tipoColor = clasificacion.tipo === 'VARO' ? 'var(--red)' : clasificacion.tipo === 'VALGO' ? 'var(--blue)' : 'var(--green)';
+    const sevColorVar = clasificacion.sevColor === 'green' ? 'var(--green)' : clasificacion.sevColor === 'amber' ? 'var(--amber)' : 'var(--red)';
+    document.getElementById('results-bar').innerHTML = `
+        <div class="result-box"><div class="result-label">Tipo</div><div class="result-value" style="color:${tipoColor}">${clasificacion.tipo}</div><div class="result-sublabel" style="color:${tipoColor}">${Math.abs(mhka).toFixed(1)}°</div></div>
+        <div class="result-box"><div class="result-label">Severidad</div><div class="result-value" style="color:${sevColorVar}">${clasificacion.severidad}</div><div class="result-sublabel" style="color:${sevColorVar}">|mHKA| = ${Math.abs(mhka).toFixed(1)}°</div></div>
+        <div class="result-box"><div class="result-label">IAD%</div><div class="result-value">${akuma.iadPct}%</div><div class="result-sublabel" style="color:var(--amber)">Intra-articular</div></div>
+        <div class="result-box"><div class="result-label">EAD%</div><div class="result-value">${akuma.eadPct}%</div><div class="result-sublabel" style="color:var(--blue)">${akuma.eadPct > 0 ? (akuma.tPct >= 80 ? 'Tibial' : akuma.fPct >= 80 ? 'Femoral' : 'Tibial + Femoral') : 'Extra-articular'}</div></div>
+        <div class="result-box highlight"><div class="result-label">Indicación</div><div class="result-value" style="font-size:16px">${diag.recoName}</div><div class="result-sublabel">${diag.recoVariant ? diag.recoVariant.split('(')[0].trim() : ''}</div></div>
+    `;
+
+    // Component analysis — with varo/valgo direction
+    const ldfaStatus = (_mldfa >= 84 && _mldfa <= 90) ? 'green' : 'rose';
+    const mptaStatus = (_mmpta >= 84 && _mmpta <= 90) ? 'green' : 'rose';
+    const jlcaStatus = _jlca <= 2 ? 'green' : _jlca <= 4 ? 'amber' : 'rose';
+
+    // Femoral direction
+    let femDir = 'Normal';
+    if (_mldfa > 90) femDir = 'Varo femoral';
+    else if (_mldfa < 84) femDir = 'Valgo femoral';
+
+    // Tibial direction
+    let tibDir = 'Normal';
+    if (_mmpta < 84) tibDir = 'Varo tibial';
+    else if (_mmpta > 90) tibDir = 'Valgo tibial';
+
+    // JLCA direction
+    const jlcaDir = _jlca <= 2 ? 'Normal' : (akuma.esVaro ? 'Contribución al varo' : 'Contribución al valgo');
+
+    document.getElementById('component-rows').innerHTML = `
+        <div class="info-row ${ldfaStatus}"><span class="info-icon">&#9651;</span><div><strong>Femoral (mLDFA ${_mldfa}°) — ${femDir}</strong><br>Desviación: ${akuma.FD.toFixed(1)}° del normal (87°). ${_mldfa >= 84 && _mldfa <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mldfa > 90 ? 'Contribución femoral al varo.' : 'Fémur en valgo (compensación).') : (_mldfa < 84 ? 'Contribución femoral al valgo.' : 'Fémur en varo (compensación).')}</div></div>
+        <div class="info-row ${mptaStatus}"><span class="info-icon">&#9661;</span><div><strong>Tibial (mMPTA ${_mmpta}°) — ${tibDir}</strong><br>Desviación: ${akuma.TD.toFixed(1)}° del normal (87°). ${_mmpta >= 84 && _mmpta <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mmpta < 84 ? 'Contribución tibial al varo.' : 'Tibia en valgo (compensación).') : (_mmpta > 90 ? 'Contribución tibial al valgo.' : 'Tibia en varo (compensación).')}</div></div>
+        <div class="info-row ${jlcaStatus}"><span class="info-icon">&#9671;</span><div><strong>Intra-articular (JLCA ${_jlca}°) — ${jlcaDir}</strong><br>${_jlca <= 2 ? 'Normal. Sin componente intra-articular significativo.' : _jlca <= 4 ? 'Moderadamente elevado. Puede reflejar desgaste articular y/o laxitud de partes blandas (<a class="ref-link" href="https://doi.org/10.1186/s40634-020-00283-1" target="_blank">Micicoi et al. 2020</a>).' : 'Patológico (>4°). Componente intra-articular significativo: desgaste cartilaginoso y/o laxitud ligamentosa.'}</div></div>
+        <div class="info-row neutral"><span class="info-icon">&#931;</span><div><strong>Verificación:</strong> GD = |EAD| + IAD = ${akuma.absEAD.toFixed(1)} + ${akuma.IAD.toFixed(1)} = ${akuma.GD.toFixed(1)}°</div></div>
+    `;
+
+    // D3 Contribution bars
+    renderD3Bars(akuma, _mldfa, _mmpta);
+
+    const eadSection = document.getElementById('ead-detail-section');
+    if (akuma.absEAD > 0) { eadSection.style.display = ''; }
+    else { eadSection.style.display = 'none'; }
+
+    // Recommendation
+    document.getElementById('reco-container').innerHTML = `
+        <div class="reco-box ${diag.recoClass}">
+            <div class="reco-type">${diag.recoType}</div>
+            <div class="reco-name">${diag.recoName}</div>
+            <div class="reco-variant">${diag.recoVariant}</div>
+            <div class="reco-rationale">${diag.rationale}</div>
+        </div>
+    `;
+    document.getElementById('warning-rows').innerHTML = diag.warnings.map(w =>
+        `<div class="info-row amber"><span class="info-icon">&#9888;</span><div>${w}</div></div>`
+    ).join('');
+
+    // Enable AKUMA button, reset any previous highlight
+    document.getElementById('btn-aplicar-akuma').disabled = false;
+    resetAkumaHighlight();
+
+    // Show phase 1, show phase 2 input
+    document.getElementById('phase1-section').classList.add('visible');
+    document.getElementById('phase2-section').style.display = '';
+}
+
+// ─────────────────────────────────────────────
+//  RECÁLCULO EN TIEMPO REAL (inputs postop editables)
+// ─────────────────────────────────────────────
+function onPostopEdit() {
+    const mptaEl = document.getElementById('ci-mmpta');
+    const ldfaEl = document.getElementById('ci-mldfa');
+    const tibwEl = document.getElementById('ci-tibwidth');
+    if (!mptaEl || !ldfaEl || !tibwEl || !window._postopCtx) return;
+
+    const mptaNew = parseFloat(mptaEl.value);
+    const ldfaNew = parseFloat(ldfaEl.value);
+    const tibW = parseFloat(tibwEl.value) || TIBIAL_WIDTH;
+    if (isNaN(mptaNew) || isNaN(ldfaNew)) return;
+
+    // JLO postop
+    const jlo = Math.abs(mptaNew - ldfaNew);
+    document.getElementById('ci-jlo').textContent = jlo.toFixed(1) + '°';
+
+    // HKA resultante (grados anatómicos)
+    const hka = mptaNew - ldfaNew + 180;
+    document.getElementById('ci-hka').textContent = hka.toFixed(1) + '°';
+
+    // Altura cuña
+    const tibCorrecAngle = Math.abs(mptaNew - window._postopCtx.mmptaOrig);
+    const wedge = tibW * Math.tan(tibCorrecAngle * Math.PI / 180);
+    document.getElementById('ci-wedge').textContent = wedge.toFixed(1) + ' mm';
+
+    // Actualizar clases warn/danger
+    const mpBox = document.getElementById('ci-box-mmpta');
+    mpBox.classList.remove('warn', 'danger');
+    if (mptaNew > 95) mpBox.classList.add('danger');
+    else if (mptaNew > 93) mpBox.classList.add('warn');
+
+    const jloBox = document.getElementById('ci-box-jlo');
+    jloBox.classList.remove('warn', 'danger');
+    if (jlo > 5) jloBox.classList.add('danger');
+    else if (jlo > 4) jloBox.classList.add('warn');
+}
+
+// ─────────────────────────────────────────────
+//  FASE 2: CORRECCIÓN POSTOPERATORIA
+// ─────────────────────────────────────────────
+function onCalcularCorreccion() {
+    if (!window._phase1) { mostrarToast('Introduce primero los parámetros angulares'); return; }
+    const targetEl = document.getElementById('inp-target');
+    if (targetEl.value === '') { mostrarToast('Introduce el HKA objetivo'); targetEl.focus(); return; }
+
+    const targetRaw = parseFloat(targetEl.value);
+    const target = targetRaw - 180;
+    const { mhka, mldfa, mmpta, jlca, edad, clasificacion, akuma, diag } = window._phase1;
+    const data = { mhka, mldfa, mmpta, jlca, edad, target };
+
+    const correc = planificarCorreccion(mhka, target, mldfa, mmpta, jlca, diag.recoName, akuma.esVaro);
+    const steps = generarExplicacion(data, clasificacion, akuma, diag, correc);
+
+    // Formula — always show anatomical degrees
+    const fMhka = mhka + 180;
+    const fTarget = target + 180;
+    document.getElementById('formula-container').innerHTML = `
+        <div class="formula-box">
+            <span>mHKA</span> <span class="f-val">${fMhka}°</span>
+            <span class="f-op">\u2192</span>
+            <span>Objetivo</span> <span class="f-val">${fTarget}°</span>
+            <span class="f-op">\u2261</span>
+            <span class="f-result">${correc.correccion.toFixed(1)}°</span>
+        </div>
+    `;
+
+    // Micicoi
+    if (correc.micicoi) {
+        document.getElementById('micicoi-container').innerHTML = `
+            <div class="micicoi-box">
+                <div class="micicoi-title">Método Micicoi (JLCA/2) aplicado</div>
+                <p>El MPTA postop planificado supera 92° (tipping point, <a class="ref-link" href="https://doi.org/10.1002/ksa.12121" target="_blank">Mabrouk et al. KSSTA 2024</a>). Se anticipa el efecto seesaw del JLCA y se reduce la corrección tibial en JLCA/2 = ${jlca}/2 = <strong>${correc.micicioiReduccion.toFixed(1)}°</strong>. Esto mejora la precisión del resultado postoperatorio.</p>
+            </div>
+        `;
+    } else {
+        document.getElementById('micicoi-container').innerHTML = '';
+    }
+
+    // Correction grid — editable inputs for mMPTA, mLDFA, anchura tibial
+    const mpClr = correc.targetMPTA > 95 ? 'danger' : correc.targetMPTA > 93 ? 'warn' : '';
+    const jloClr = correc.jloPostop > 5 ? 'danger' : correc.jloPostop > 4 ? 'warn' : '';
+    const hkaResultante = correc.targetMPTA - correc.targetLDFA + 180;
+    document.getElementById('correction-grid').innerHTML = `
+        <div class="correction-item ${mpClr}" id="ci-box-mmpta"><div class="ci-label">mMPTA postop</div><div class="ci-value"><input type="number" class="ci-input" id="ci-mmpta" value="${correc.targetMPTA.toFixed(1)}" step="0.5" inputmode="decimal">°</div><div class="ci-note">Actual: ${mmpta}° / Límite: &lt;95°</div></div>
+        <div class="correction-item" id="ci-box-mldfa"><div class="ci-label">mLDFA postop</div><div class="ci-value"><input type="number" class="ci-input" id="ci-mldfa" value="${correc.targetLDFA.toFixed(1)}" step="0.5" inputmode="decimal">°</div><div class="ci-note">Actual: ${mldfa}° / Normal: 84-90°</div></div>
+        <div class="correction-item ${jloClr}" id="ci-box-jlo"><div class="ci-label">JLO postop</div><div class="ci-value" id="ci-jlo">${correc.jloPostop.toFixed(1)}°</div><div class="ci-note">Límite: &lt;5°</div></div>
+        <div class="correction-item" id="ci-box-wedge"><div class="ci-label">Altura cuña</div><div class="ci-value" id="ci-wedge">${correc.wedgeHeight.toFixed(1)} mm</div><div class="ci-note">Anchura tibial: <input type="number" class="ci-input-sm" id="ci-tibwidth" value="${TIBIAL_WIDTH}" step="1" inputmode="numeric"> mm</div></div>
+        <div class="correction-hka-row" id="ci-box-hka"><div class="ci-label">HKA resultante</div><div class="ci-value" id="ci-hka">${hkaResultante.toFixed(1)}°</div></div>
+    `;
+
+    // Store original preop values for wedge recalculation
+    window._postopCtx = { mmptaOrig: mmpta, mldfaOrig: mldfa };
+
+    // Attach listeners to editable inputs
+    ['ci-mmpta', 'ci-mldfa', 'ci-tibwidth'].forEach(id => {
+        document.getElementById(id).addEventListener('input', onPostopEdit);
+    });
+
+    // Safety warnings
+    document.getElementById('safety-rows').innerHTML = correc.safetyWarnings.map(w =>
+        `<div class="info-row rose"><span class="info-icon">&#9888;</span><div>${w}</div></div>`
+    ).join('');
+
+    // Explanation
+    document.getElementById('explanation-container').innerHTML = steps.map((s, i) =>
+        `<div class="step-card"><div class="step-number">${i + 1}</div><div><div class="step-title">${s.title}</div><div class="step-text">${s.text}</div></div></div>`
+    ).join('');
+
+    // Show
+    document.getElementById('correction-results').style.display = '';
+    document.getElementById('explanation-card').style.display = '';
+
+    // Store for copy
+    window._lastResult = { data, clasificacion, akuma, diag, correc };
+
+    document.getElementById('correction-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    mostrarToast('Corrección calculada');
+}
+
+// ─────────────────────────────────────────────
+//  EVENTS
+// ─────────────────────────────────────────────
+const analysisInputs = ['inp-edad', 'inp-mhka', 'inp-mldfa', 'inp-mmpta', 'inp-jlca'];
+
+analysisInputs.forEach(id => {
+    document.getElementById(id).addEventListener('input', function() {
+        renderPhase1();
+        document.getElementById('correction-results').style.display = 'none';
+        document.getElementById('explanation-card').style.display = 'none';
+    });
+});
+
+function onLimpiar() {
+    analysisInputs.forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('inp-target').value = 180;
+    document.getElementById('phase1-section').classList.remove('visible');
+    document.getElementById('phase2-section').style.display = 'none';
+    document.getElementById('correction-results').style.display = 'none';
+    document.getElementById('explanation-card').style.display = 'none';
+    resetAkumaHighlight();
+    document.getElementById('btn-aplicar-akuma').disabled = true;
+    window._phase1 = null;
+    window._lastResult = null;
+    mostrarToast('Formulario limpiado');
+}
+
+function cargarEjemplo(idx) {
+    const ej = EJEMPLOS[idx];
+    document.getElementById('inp-edad').value = ej.edad;
+    document.getElementById('inp-mhka').value = ej.mhka + 180;
+    document.getElementById('inp-mldfa').value = ej.mldfa;
+    document.getElementById('inp-mmpta').value = ej.mmpta;
+    document.getElementById('inp-jlca').value = ej.jlca;
+    document.getElementById('inp-target').value = 180;
+    toggleExamples();
+    renderPhase1();
+    mostrarToast('Ejemplo cargado');
+}
+
+function toggleExamples() {
+    document.getElementById('dropdown-ej').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.btn-examples') && !e.target.closest('.examples-dropdown')) {
+        document.getElementById('dropdown-ej').classList.remove('open');
+    }
+});
+
+function toggleGlossary() {
+    const content = document.getElementById('glossary-content');
+    const btn = document.getElementById('btn-glossary');
+    content.classList.toggle('visible');
+    btn.classList.toggle('open');
+}
+
+function copiarResumen() {
+    if (!window._lastResult) return;
+    const { data, clasificacion, akuma, diag, correc } = window._lastResult;
+    const text = [
+        'ANÁLISIS DE DEFORMIDAD CORONAL',
+        '==============================',
+        `Edad: ${data.edad}a | mHKA: ${data.mhka}° | Tipo: ${clasificacion.tipo} | Severidad: ${clasificacion.severidad}`,
+        `mLDFA: ${data.mldfa}° | mMPTA: ${data.mmpta}° | JLCA: ${data.jlca}°`,
+        `IAD%: ${akuma.iadPct}% | EAD%: ${akuma.eadPct}% | T%: ${akuma.tPct}% | F%: ${akuma.fPct}%`,
+        `Recomendación: ${diag.recoName} (${diag.recoVariant})`,
+        `Corrección: ${correc.correccion.toFixed(1)}°`,
+        `Postop: mMPTA ${correc.targetMPTA.toFixed(1)}° | mLDFA ${correc.targetLDFA.toFixed(1)}° | JLO ${correc.jloPostop.toFixed(1)}° | Cuña ${correc.wedgeHeight.toFixed(1)}mm`,
+        correc.micicoi ? `Micicoi aplicado: reducción JLCA/2 = ${correc.micicioiReduccion.toFixed(1)}°` : ''
+    ].filter(Boolean).join('\n');
+    navigator.clipboard.writeText(text).then(() => mostrarToast('Resumen copiado'));
+}
+
+// ─────────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────────
+function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─────────────────────────────────────────────
+//  DARK MODE
+// ─────────────────────────────────────────────
+const btnTheme = document.getElementById('btn-theme');
+
+function applyTheme(dark) {
+    if (dark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        btnTheme.textContent = '\u2600\uFE0F';
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        btnTheme.textContent = '\uD83C\uDF19';
+    }
+    // Re-render D3 charts with new theme colors
+    if (window._phase1) renderD3Bars(window._phase1.akuma, window._phase1.mldfa, window._phase1.mmpta);
+}
+
+function getAutoTheme() {
+    const hour = new Date().getHours();
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return (hour >= 21 || hour < 7 || prefersDark) ? 'dark' : 'light';
+}
+
+function initTheme() {
+    const saved = localStorage.getItem('theme');
+    const savedDate = localStorage.getItem('theme-date');
+    const today = new Date().toDateString();
+    if (saved && savedDate === today) {
+        applyTheme(saved === 'dark');
+    } else {
+        localStorage.removeItem('theme');
+        localStorage.removeItem('theme-date');
+        applyTheme(getAutoTheme() === 'dark');
+    }
+}
+
+btnTheme.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(!isDark);
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme-date', new Date().toDateString());
+});
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const saved = localStorage.getItem('theme');
+    const savedDate = localStorage.getItem('theme-date');
+    if (!saved || savedDate !== new Date().toDateString()) {
+        applyTheme(getAutoTheme() === 'dark');
+    }
+});
+
+initTheme();
+
+// ─────────────────────────────────────────────
+//  LOCALHOST DETECTION
+// ─────────────────────────────────────────────
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    document.querySelectorAll('a[href^="https://jmacot.github.io"]').forEach(a => {
+        a.removeAttribute('href');
+        a.style.opacity = '0.4';
+        a.style.pointerEvents = 'none';
+    });
+}
+</script>
+</body>
+</html>
