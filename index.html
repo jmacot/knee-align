@@ -152,11 +152,19 @@
         }
 
         /* ── BUTTONS ── */
-        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+        .btn-row { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+        .btn-calcular {
+            flex: 1; background: var(--green); color: white; border: none;
+            border-radius: 8px; padding: 12px 20px; font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
+            letter-spacing: 0.02em;
+        }
+        .btn-calcular:hover { background: #15803d; box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+        .btn-calcular:active { transform: translateY(0); }
         .btn-reset {
             border: 1.5px dashed var(--border); background: transparent;
-            color: var(--text-muted); border-radius: 8px; padding: 10px 16px;
-            font-size: 13px; font-weight: 600; cursor: pointer;
+            color: var(--text-muted); border-radius: 8px; padding: 8px 12px;
+            font-size: 11px; font-weight: 600; cursor: pointer;
             transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
         }
         .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
@@ -174,7 +182,7 @@
         .btn-danger:hover { background: var(--red); color: white; }
         .btn-examples {
             background: transparent; color: var(--purple); border: 1.5px solid var(--purple);
-            border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 700;
+            border-radius: 8px; padding: 8px 12px; font-size: 11px; font-weight: 700;
             cursor: pointer; transition: all 0.2s; font-family: 'Inter', Arial, sans-serif;
             position: relative;
         }
@@ -763,9 +771,10 @@
             </div>
         </div>
         <div class="btn-row">
+            <button class="btn-calcular" onclick="renderPhase1()">Calcular</button>
             <button class="btn-reset" onclick="onLimpiar()">Restablecer</button>
             <div style="position:relative">
-                <button class="btn-examples" onclick="toggleExamples()" id="btn-ej" style="width:100%">Ejemplos</button>
+                <button class="btn-examples" onclick="toggleExamples()" id="btn-ej">Ejemplos</button>
                 <div class="examples-dropdown" id="dropdown-ej">
                     <div class="example-item" onclick="cargarEjemplo(0)">Varo tibial típico<span>mHKA 174° / mLDFA 87 / mMPTA 82 / JLCA 1 / 45a</span></div>
                     <div class="example-item" onclick="cargarEjemplo(1)">Valgo femoral<span>mHKA 188° / mLDFA 80 / mMPTA 87 / JLCA 1 / 50a</span></div>
@@ -1674,11 +1683,10 @@ function onCalcularCorreccion() {
 // ─────────────────────────────────────────────
 const analysisInputs = ['inp-edad', 'inp-mhka', 'inp-mldfa', 'inp-mmpta', 'inp-jlca'];
 
+// Enter key triggers calculation from any input
 analysisInputs.forEach(id => {
-    document.getElementById(id).addEventListener('input', function() {
-        renderPhase1();
-        document.getElementById('correction-results').style.display = 'none';
-        document.getElementById('explanation-card').style.display = 'none';
+    document.getElementById(id).addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); renderPhase1(); }
     });
 });
 
