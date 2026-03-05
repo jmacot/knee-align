@@ -1539,7 +1539,7 @@ function cargarEjemplo(idx) {
     document.getElementById('inp-mmpta').value = ej.mmpta;
     document.getElementById('inp-jlca').value = ej.jlca;
     document.getElementById('inp-target').value = 180;
-    toggleExamples();
+    document.getElementById('dropdown-ej').classList.remove('open');
     renderPhase1();
     mostrarToast('Ejemplo cargado');
 }
