@@ -981,7 +981,7 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
         if (fPct >= 80) {
             recoType = 'Osteotomía femoral distal'; recoName = 'DFO';
             recoVariant = esVaro ? 'Apertura cuña medial' : 'Cierre cuña lateral';
-            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente femoral (F% ${fPct}% ≥ 80%). mLDFA ${mLDFA}° desviado del normal (87°). La corrección se realiza a nivel femoral distal.`;
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente femoral (F% ${fPct}% ≥ 80%). mLDFA ${mLDFA}° desviado del normal (84-90°). La corrección se realiza a nivel femoral distal.`;
             recoClass = '';
         } else if (tPct >= 80 && Math.abs(FD) <= 3 && !needsDLO) {
             recoType = 'Osteotomía tibial alta'; recoName = 'HTO';
@@ -1397,8 +1397,8 @@ function renderPhase1() {
     const jlcaDir = _jlca <= 2 ? 'Normal' : (akuma.esVaro ? 'Contribución al varo' : 'Contribución al valgo');
 
     document.getElementById('component-rows').innerHTML = `
-        <div class="info-row ${ldfaStatus}"><span class="info-icon">&#9651;</span><div><strong>Femoral (mLDFA ${_mldfa}°) — ${femDir}</strong><br>Desviación: ${akuma.FD.toFixed(1)}° del normal (87°). ${_mldfa >= 84 && _mldfa <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mldfa > 90 ? 'Contribución femoral al varo.' : 'Fémur en valgo (compensación).') : (_mldfa < 84 ? 'Contribución femoral al valgo.' : 'Fémur en varo (compensación).')}</div></div>
-        <div class="info-row ${mptaStatus}"><span class="info-icon">&#9661;</span><div><strong>Tibial (mMPTA ${_mmpta}°) — ${tibDir}</strong><br>Desviación: ${akuma.TD.toFixed(1)}° del normal (87°). ${_mmpta >= 84 && _mmpta <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mmpta < 84 ? 'Contribución tibial al varo.' : 'Tibia en valgo (compensación).') : (_mmpta > 90 ? 'Contribución tibial al valgo.' : 'Tibia en varo (compensación).')}</div></div>
+        <div class="info-row ${ldfaStatus}"><span class="info-icon">&#9651;</span><div><strong>Femoral (mLDFA ${_mldfa}°) — ${femDir}</strong><br>Desviación: ${akuma.FD.toFixed(1)}° del normal (84-90°). ${_mldfa >= 84 && _mldfa <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mldfa > 90 ? 'Contribución femoral al varo.' : 'Fémur en valgo (compensación).') : (_mldfa < 84 ? 'Contribución femoral al valgo.' : 'Fémur en varo (compensación).')}</div></div>
+        <div class="info-row ${mptaStatus}"><span class="info-icon">&#9661;</span><div><strong>Tibial (mMPTA ${_mmpta}°) — ${tibDir}</strong><br>Desviación: ${akuma.TD.toFixed(1)}° del normal (84-90°). ${_mmpta >= 84 && _mmpta <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mmpta < 84 ? 'Contribución tibial al varo.' : 'Tibia en valgo (compensación).') : (_mmpta > 90 ? 'Contribución tibial al valgo.' : 'Tibia en varo (compensación).')}</div></div>
         <div class="info-row ${jlcaStatus}"><span class="info-icon">&#9671;</span><div><strong>Intra-articular (JLCA ${_jlca}°) — ${jlcaDir}</strong><br>${_jlca <= 2 ? 'Normal. Sin componente intra-articular significativo.' : _jlca <= 4 ? 'Moderadamente elevado. Puede reflejar desgaste articular y/o laxitud de partes blandas (<a class="ref-link" href="https://doi.org/10.1186/s40634-020-00283-1" target="_blank">Micicoi et al. 2020</a>).' : 'Patológico (>4°). Componente intra-articular significativo: desgaste cartilaginoso y/o laxitud ligamentosa.'}</div></div>
         <div class="info-row neutral"><span class="info-icon">&#931;</span><div><strong>Verificación:</strong> GD = |EAD| + IAD = ${akuma.absEAD.toFixed(1)} + ${akuma.IAD.toFixed(1)} = ${akuma.GD.toFixed(1)}°</div></div>
     `;
