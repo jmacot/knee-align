@@ -1075,15 +1075,17 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
         correccion > 12.5
     );
 
+    const ukaCompartimento = esVaro ? 'medial' : 'lateral';
+
     if (iadPct > 60) {
         if (edad > 55) {
             recoType = 'Artroplastia unicompartimental'; recoName = 'UKA';
-            recoVariant = 'Prótesis unicompartimental medial';
-            rationale = `Deformidad predominantemente intra-articular (IAD ${iadPct}% > 60%). JLCA de ${JLCA}° indica componente articular significativo. Edad ${edad} años (>55) con OA unicompartimental favorece UKA (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>, <a class="ref-link" href="articulos/Goodell-JBJS-2023.pdf" target="_blank">Goodell et al. JBJS 2023</a>).`;
+            recoVariant = `Prótesis unicompartimental ${ukaCompartimento}`;
+            rationale = `Deformidad predominantemente intra-articular (IAD ${iadPct}% > 60%). JLCA de ${JLCA}° indica componente articular significativo. Edad ${edad} años (>55) con OA unicompartimental ${ukaCompartimento} favorece UKA (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>, <a class="ref-link" href="articulos/Goodell-JBJS-2023.pdf" target="_blank">Goodell et al. JBJS 2023</a>).`;
             recoClass = 'uka';
         } else {
             recoType = 'Artroplastia unicompartimental'; recoName = 'UKA';
-            recoVariant = 'Prótesis unicompartimental medial';
+            recoVariant = `Prótesis unicompartimental ${ukaCompartimento}`;
             rationale = `Deformidad predominantemente intra-articular (IAD ${iadPct}% > 60%). JLCA de ${JLCA}° indica desgaste articular. Edad ${edad} años (≤55): UKA preserva estructuras nativas. Considerar decisión compartida con el paciente (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
             recoClass = 'uka';
         }
