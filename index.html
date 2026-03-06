@@ -1298,42 +1298,30 @@ function renderContribBar(containerId, segments, legendId) {
     const hasSub = segments.some(s => s.barSub);
     const W = 400, H = hasSub ? 40 : 32, R = 12;
 
-    // Fix for file:// protocol on Windows: url(#id) needs full base URL
-    const svgBase = window.location.href.replace(/#.*$/, '');
-
     container.innerHTML = '';
     const svg = d3.select(container).append('svg')
         .attr('width', W)
         .attr('height', H)
         .attr('viewBox', `0 0 ${W} ${H}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet');
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .style('border-radius', R + 'px')
+        .style('overflow', 'hidden')
+        .style('display', 'block');
 
-    const defs = svg.append('defs');
-    const clipId = containerId + '-clip';
-    defs.append('clipPath').attr('id', clipId)
-        .append('rect').attr('width', W).attr('height', H).attr('rx', R);
-
-    svg.append('rect').attr('width', W).attr('height', H).attr('rx', R)
+    svg.append('rect').attr('width', W).attr('height', H)
         .attr('fill', theme.surface2);
 
-    const g = svg.append('g').attr('clip-path', `url(${svgBase}#${clipId})`);
+    const g = svg.append('g');
 
     let x = 0;
     segments.forEach((seg, i) => {
         const w = (seg.pct / 100) * W;
-        const gradId = containerId + '-grad-' + i;
-
-        const grad = defs.append('linearGradient').attr('id', gradId)
-            .attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '0%');
-        const c = d3.color(seg.color);
-        grad.append('stop').attr('offset', '0%').attr('stop-color', c.brighter(0.3));
-        grad.append('stop').attr('offset', '100%').attr('stop-color', c.darker(0.1));
 
         const segW = Math.max(w, W * 0.02);
         g.append('rect')
             .attr('x', x).attr('y', 0)
             .attr('width', 0).attr('height', H)
-            .attr('fill', `url(${svgBase}#${gradId})`)
+            .attr('fill', seg.color)
             .style('cursor', 'pointer')
             .on('mouseover', function(event) {
                 showD3Tooltip(event, '<strong>' + seg.label + '</strong><br>' + seg.pct + '% (' + seg.value + '°)');
