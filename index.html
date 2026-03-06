@@ -1285,6 +1285,11 @@ function showD3Tooltip(event, html) {
 }
 function hideD3Tooltip() { d3.select('#d3-tooltip').classed('visible', false); }
 
+// Fix for Windows file:// protocol: url(#id) needs absolute base
+function svgUrl(id) {
+    return `url(${window.location.href.split('#')[0]}#${id})`;
+}
+
 function renderContribBar(containerId, segments, legendId) {
     const container = document.getElementById(containerId);
     const legend = document.getElementById(legendId);
@@ -1313,7 +1318,7 @@ function renderContribBar(containerId, segments, legendId) {
     svg.append('rect').attr('width', W).attr('height', H).attr('rx', R)
         .attr('fill', theme.surface2);
 
-    const g = svg.append('g').attr('clip-path', `url(#${clipId})`);
+    const g = svg.append('g').attr('clip-path', svgUrl(clipId));
 
     let x = 0;
     segments.forEach((seg, i) => {
@@ -1330,7 +1335,7 @@ function renderContribBar(containerId, segments, legendId) {
         g.append('rect')
             .attr('x', x).attr('y', 0)
             .attr('width', 0).attr('height', H)
-            .attr('fill', `url(#${gradId})`)
+            .attr('fill', svgUrl(gradId))
             .style('cursor', 'pointer')
             .on('mouseover', function(event) {
                 showD3Tooltip(event, '<strong>' + seg.label + '</strong><br>' + seg.pct + '% (' + seg.value + '°)');
