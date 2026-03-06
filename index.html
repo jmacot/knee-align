@@ -354,7 +354,7 @@
             text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
         }
         .d3-chart-wrap { width: 100%; overflow: visible; }
-        .d3-chart-wrap svg { display: block; width: 100%; height: auto; }
+        .d3-chart-wrap svg { display: block; width: 100%; height: auto; max-width: 100%; }
         .contrib-legend {
             display: flex; gap: 16px; margin-top: 6px; font-size: 11px;
         }
@@ -1300,6 +1300,8 @@ function renderContribBar(containerId, segments, legendId) {
 
     container.innerHTML = '';
     const svg = d3.select(container).append('svg')
+        .attr('width', W)
+        .attr('height', H)
         .attr('viewBox', `0 0 ${W} ${H}`)
         .attr('preserveAspectRatio', 'xMidYMid meet');
 
