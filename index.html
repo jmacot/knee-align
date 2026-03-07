@@ -1747,13 +1747,13 @@ function renderContribBar(containerId, segments, legendId) {
             .transition().duration(500).delay(i * 100).ease(d3.easeCubicOut)
             .attr('width', segW);
 
-        if (w > 30) {
-            if (seg.barSub && w > 50) {
+        if (w > 24) {
+            if (seg.barSub && w > 36) {
                 g.append('text')
                     .attr('x', x + segW / 2).attr('y', H / 2 - 5)
                     .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
                     .attr('fill', 'rgba(255,255,255,0.95)')
-                    .attr('font-size', '13px').attr('font-weight', '700')
+                    .attr('font-size', w > 50 ? '13px' : '11px').attr('font-weight', '700')
                     .attr('font-family', 'Inter, sans-serif')
                     .style('opacity', 0).style('pointer-events', 'none')
                     .text(seg.pct + '%')
@@ -1763,7 +1763,7 @@ function renderContribBar(containerId, segments, legendId) {
                     .attr('x', x + segW / 2).attr('y', H / 2 + 9)
                     .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
                     .attr('fill', 'rgba(255,255,255,0.7)')
-                    .attr('font-size', '9px').attr('font-weight', '600')
+                    .attr('font-size', w > 50 ? '9px' : '8px').attr('font-weight', '600')
                     .attr('font-family', 'Inter, sans-serif')
                     .style('opacity', 0).style('pointer-events', 'none')
                     .text(seg.barSub)
