@@ -1,12 +1,13 @@
 # Deformidades Coronales
 
-Herramienta de analisis de deformidades coronales del miembro inferior basada en el algoritmo AKUMA (Ollivier et al. KSSTA 2025).
+Herramienta de analisis de deformidades coronales del miembro inferior basada en los algoritmos AKUMA (varo) y AKULA (valgo) de Ollivier et al. (KSSTA 2025).
 
 ## Acceso directo
 [Abrir la aplicacion](https://jmacot.github.io/deformidad-coronal/)
 
 ## Funcionalidades
-- Analisis de componentes de la deformidad (algoritmo AKUMA): IAD%, EAD%, contribucion tibial y femoral
+- Analisis de componentes de la deformidad (AKUMA para varo / AKULA para valgo): IAD%, EAD%, contribucion tibial y femoral
+- Disclaimer de precaucion para AKULA (valgo) con desplegable explicativo
 - Diagnostico diferencial: HTO vs DFO vs DLO vs UKA
 - Planificacion de correccion con metodo Mikulicz y correccion Micicoi (JLCA/2)
 - Visualizadores de rango interactivos para cada parametro

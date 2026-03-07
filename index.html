@@ -623,6 +623,29 @@
         }
         .link-reset-akuma:hover { color: var(--accent); }
 
+        /* ── AKULA WARNING ── */
+        .akula-warning {
+            background: var(--amber-light); border: 1.5px solid var(--amber);
+            border-radius: var(--radius-sm); margin: 10px 0 6px;
+            font-size: 13px; color: var(--text);
+        }
+        .akula-warning summary {
+            padding: 10px 14px; cursor: pointer; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+            list-style: none; user-select: none;
+        }
+        .akula-warning summary::-webkit-details-marker { display: none; }
+        .akula-warning summary::after {
+            content: '▸'; margin-left: auto; font-size: 12px;
+            transition: transform 0.2s; color: var(--amber);
+        }
+        .akula-warning[open] summary::after { transform: rotate(90deg); }
+        .akula-warning .detail-text {
+            padding: 0 14px 12px; font-size: 12px; line-height: 1.6;
+            color: var(--text-muted); border-top: 1px solid rgba(192,84,10,0.15);
+            padding-top: 10px; margin-top: 2px;
+        }
+
         /* ── COPY BUTTON ── */
         .btn-copy {
             display: inline-flex; align-items: center; gap: 6px;
@@ -804,9 +827,9 @@
 
         <!-- Análisis de Componentes -->
         <div class="card" style="animation-delay:0.15s">
-            <div class="section-title">Análisis de componentes (AKUMA) <span class="info-toggle" onclick="this.parentElement.nextElementSibling.classList.toggle('open')" title="¿Por qué 87°?">ℹ</span></div>
+            <div class="section-title" id="akuma-components-title">Análisis de componentes (<span id="algo-name-comp">AKUMA</span>) <span class="info-toggle" onclick="this.parentElement.nextElementSibling.classList.toggle('open')" title="¿Por qué 87°?">ℹ</span></div>
             <div class="info-tooltip-box">
-                <p>El algoritmo AKUMA calcula la <strong>desviación femoral (FD)</strong> y <strong>tibial (TD)</strong> respecto a <strong>87°</strong>, el punto medio del rango normal (84-90°). Esto permite que la fórmula de verificación se cumpla:</p>
+                <p>El algoritmo <span class="algo-name-ref">AKUMA</span> calcula la <strong>desviación femoral (FD)</strong> y <strong>tibial (TD)</strong> respecto a <strong>87°</strong>, el punto medio del rango normal (84-90°). Esto permite que la fórmula de verificación se cumpla:</p>
                 <p style="text-align:center;font-weight:700;margin:6px 0">GD = |EAD| + IAD</p>
                 <p>donde EAD = FD + TD (con signos). Si la desviación se calculase desde los bordes del rango (84° o 90°), la suma de componentes no cuadraría con la deformidad global.</p>
                 <p style="margin-top:6px;font-size:11px;color:var(--text-light)">Ref: Ollivier et al. KSSTA 2025 — <a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">PDF</a></p>
@@ -838,9 +861,15 @@
             <div id="warning-rows"></div>
         </div>
 
-        <!-- AKUMA Flowchart -->
+        <!-- AKUMA/AKULA Flowchart -->
         <div class="card" style="animation-delay:0.25s">
-            <div class="section-title">Algoritmo AKUMA (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank" style="color:inherit;border-bottom-color:var(--text-light)">Ollivier et al. KSSTA 2025</a>)</div>
+            <div class="section-title" id="akuma-section-title">Algoritmo <span id="algo-name-flow">AKUMA</span> (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank" style="color:inherit;border-bottom-color:var(--text-light)">Ollivier et al. KSSTA 2025</a>)</div>
+            <details class="akula-warning" id="akula-warning" style="display:none">
+                <summary>⚠️ AKULA (valgo) — Interpretación con precaución</summary>
+                <div class="detail-text">
+                    El algoritmo AKULA aplica la misma estructura de decisión que AKUMA pero con fórmulas invertidas para valgo. El artículo original (Ollivier et al. KSSTA 2025) enfatiza que la evaluación del valgo requiere <strong>umbrales ajustados</strong> y una interpretación cuidadosa de los landmarks anatómicos. Los valores de referencia (87° para LDFA y MPTA) se mantienen, pero las contribuciones tibial y femoral se invierten. Los resultados deben interpretarse con cautela y no como una simple extrapolación del algoritmo AKUMA para varo.
+                </div>
+            </details>
             <div class="akuma-chart" id="akuma-chart">
                 <div class="akuma-scroll-hint" id="akuma-scroll-hint"></div>
                 <div class="akuma-tree">
@@ -1208,15 +1237,22 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
     });
 
     // Paso 2
-    let paso2 = `Según el algoritmo AKUMA (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>):<br>`;
-    paso2 += `\u2022 Deformidad tibial (TD) = 87 - mMPTA = 87 - ${data.mmpta} = ${v(akuma.TD.toFixed(1) + '°', 'accent')}<br>`;
-    paso2 += `\u2022 Deformidad femoral (FD) = mLDFA - 87 = ${data.mldfa} - 87 = ${v(akuma.FD.toFixed(1) + '°', 'accent')}<br>`;
+    const algoName = akuma.esVaro ? 'AKUMA' : 'AKULA';
+    let paso2 = `Según el algoritmo ${algoName} (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>):<br>`;
+    paso2 += akuma.esVaro
+        ? `\u2022 Deformidad tibial (TD) = 87 - mMPTA = 87 - ${data.mmpta} = ${v(akuma.TD.toFixed(1) + '°', 'accent')}<br>`
+        : `\u2022 Deformidad tibial (TD) = mMPTA - 87 = ${data.mmpta} - 87 = ${v(akuma.TD.toFixed(1) + '°', 'accent')}<br>`;
+    paso2 += akuma.esVaro
+        ? `\u2022 Deformidad femoral (FD) = mLDFA - 87 = ${data.mldfa} - 87 = ${v(akuma.FD.toFixed(1) + '°', 'accent')}<br>`
+        : `\u2022 Deformidad femoral (FD) = 87 - mLDFA = 87 - ${data.mldfa} = ${v(akuma.FD.toFixed(1) + '°', 'accent')}<br>`;
     paso2 += `\u2022 Deformidad intra-articular (IAD) = JLCA = ${v(akuma.IAD.toFixed(1) + '°', 'amber')}<br>`;
-    paso2 += `\u2022 Deformidad extra-articular (EAD) = LDFA - MPTA = ${data.mldfa} - ${data.mmpta} = ${v(akuma.EAD.toFixed(1) + '°', 'accent')}<br>`;
+    paso2 += akuma.esVaro
+        ? `\u2022 Deformidad extra-articular (EAD) = LDFA - MPTA = ${data.mldfa} - ${data.mmpta} = ${v(akuma.EAD.toFixed(1) + '°', 'accent')}<br>`
+        : `\u2022 Deformidad extra-articular (EAD) = MPTA - LDFA = ${data.mmpta} - ${data.mldfa} = ${v(akuma.EAD.toFixed(1) + '°', 'accent')}<br>`;
     paso2 += `\u2022 Deformidad global (GD) = |EAD| + IAD = ${akuma.absEAD.toFixed(1)} + ${akuma.IAD.toFixed(1)} = ${v(akuma.GD.toFixed(1) + '°', 'accent')}<br>`;
     paso2 += `\u2022 IAD% = ${v(akuma.iadPct + '%', 'amber')} / EAD% = ${v(akuma.eadPct + '%', 'accent')}`;
     if (akuma.absEAD > 0) paso2 += `<br>\u2022 T% = ${v(akuma.tPct + '%', 'accent')} / F% = ${v(akuma.fPct + '%', 'purple')}`;
-    steps.push({ title: 'Análisis AKUMA — Localización de deformidad', text: paso2 });
+    steps.push({ title: `Análisis ${algoName} — Localización de deformidad`, text: paso2 });
 
     // Paso 3
     let paso3 = '';
@@ -1516,6 +1552,13 @@ function renderPhase1() {
     // Store for phase 2
     window._phase1 = { mhka, mldfa: _mldfa, mmpta: _mmpta, jlca: _jlca, edad: _edad, clasificacion, akuma, diag, cpak };
 
+    // Dynamic algorithm name: AKUMA (varo) vs AKULA (valgo)
+    const algoName = akuma.esVaro ? 'AKUMA' : 'AKULA';
+    document.getElementById('algo-name-flow').textContent = algoName;
+    document.getElementById('algo-name-comp').textContent = algoName;
+    document.querySelectorAll('.algo-name-ref').forEach(el => el.textContent = algoName);
+    document.getElementById('akula-warning').style.display = akuma.esVaro ? 'none' : '';
+
     // Results bar
     const tipoColor = clasificacion.tipo === 'VARO' ? 'var(--red)' : clasificacion.tipo === 'VALGO' ? 'var(--blue)' : 'var(--green)';
     const sevColorVar = clasificacion.sevColor === 'green' ? 'var(--green)' : clasificacion.sevColor === 'amber' ? 'var(--amber)' : 'var(--red)';
@@ -1759,6 +1802,11 @@ function onLimpiar() {
     document.getElementById('explanation-card').style.display = 'none';
     resetAkumaHighlight();
     document.getElementById('btn-aplicar-akuma').disabled = true;
+    // Reset algorithm name to default
+    document.getElementById('algo-name-flow').textContent = 'AKUMA';
+    document.getElementById('algo-name-comp').textContent = 'AKUMA';
+    document.querySelectorAll('.algo-name-ref').forEach(el => el.textContent = 'AKUMA');
+    document.getElementById('akula-warning').style.display = 'none';
     window._phase1 = null;
     window._lastResult = null;
     _hasCalculated = false;
