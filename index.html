@@ -13,6 +13,8 @@
     <meta name="description" content="Análisis de deformidades coronales del miembro inferior con algoritmo AKUMA, diagnóstico diferencial y método Micicoi">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
     <style>
         :root {
@@ -499,13 +501,98 @@
 
         .micicoi-box {
             border: 1.5px dashed var(--purple); border-radius: var(--radius-sm);
-            padding: 12px 14px; margin: 12px 0; background: var(--purple-light);
+            padding: 0; margin: 12px 0; background: var(--purple-light);
         }
         .micicoi-box .micicoi-title {
             font-size: 11px; font-weight: 700; text-transform: uppercase;
-            color: var(--purple); margin-bottom: 4px;
+            color: var(--purple); cursor: pointer; padding: 10px 14px;
+            list-style: none; display: flex; align-items: center; gap: 6px;
         }
-        .micicoi-box p { font-size: 12px; color: #5b21b6; line-height: 1.6; }
+        .micicoi-box .micicoi-title::before {
+            content: '▸'; font-size: 10px; transition: transform 0.2s;
+        }
+        .micicoi-box[open] .micicoi-title::before { transform: rotate(90deg); }
+        .micicoi-box .micicoi-title::-webkit-details-marker { display: none; }
+        .micicoi-box p {
+            font-size: 12px; color: #5b21b6; line-height: 1.6;
+            padding: 0 14px 10px; margin: 0;
+        }
+
+        /* ── CORRECTION ARROW VISUAL ── */
+        .corr-arrow {
+            display: flex; align-items: center; justify-content: center;
+            gap: 0; margin: 10px 0; flex-wrap: nowrap;
+        }
+        .corr-box {
+            text-align: center; padding: 8px 14px;
+            border-radius: var(--radius-sm); min-width: 80px;
+        }
+        .corr-box.actual {
+            background: var(--surface2); border: 1.5px solid var(--border);
+        }
+        .corr-box.postop {
+            background: var(--accent-light); border: 1.5px solid var(--accent);
+        }
+        .corr-box .corr-label {
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 2px;
+        }
+        .corr-box .corr-value {
+            font-size: 20px; font-weight: 700; color: var(--text);
+            font-family: 'Lora', serif;
+        }
+        .corr-box.postop .corr-value { color: var(--accent); }
+        .corr-mid {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 0 6px; flex-shrink: 0;
+        }
+        .corr-mid .corr-delta {
+            font-size: 13px; font-weight: 700; color: var(--green);
+            white-space: nowrap;
+        }
+        .corr-mid .corr-arrow-line {
+            font-size: 16px; color: var(--text-light); line-height: 1;
+        }
+        .corr-mid .corr-micicoi-delta {
+            font-size: 10px; font-weight: 600; color: #7c3aed;
+            white-space: nowrap;
+        }
+        @media (max-width: 400px) {
+            .corr-box { min-width: 64px; padding: 6px 10px; }
+            .corr-box .corr-value { font-size: 17px; }
+            .corr-mid .corr-delta { font-size: 11px; }
+        }
+
+        /* ── SEESAW TOOLTIP ── */
+        .seesaw-link {
+            color: inherit; font-weight: 700; text-decoration: underline;
+            text-decoration-style: dotted; text-underline-offset: 2px;
+            cursor: help; position: relative;
+        }
+        .seesaw-popover {
+            display: none; position: fixed; z-index: 9999;
+            background: var(--surface); color: var(--text);
+            border: 1.5px solid var(--purple); border-radius: var(--radius-sm);
+            padding: 14px 16px; max-width: 360px; width: 90vw;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+            font-size: 12px; line-height: 1.65;
+        }
+        .seesaw-popover.visible { display: block; }
+        .seesaw-popover .pop-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--purple); margin-bottom: 6px; letter-spacing: 0.5px;
+        }
+        .seesaw-popover p { margin: 0 0 8px; }
+        .seesaw-popover p:last-child { margin-bottom: 0; }
+        .seesaw-popover .pop-close {
+            position: absolute; top: 6px; right: 8px;
+            background: none; border: none; font-size: 16px;
+            color: var(--text-light); cursor: pointer; line-height: 1;
+        }
+        [data-theme="dark"] .seesaw-popover {
+            background: var(--surface); border-color: #a78bfa;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+        }
 
         /* ── STEP CARDS ── */
         .step-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -658,7 +745,48 @@
             background: transparent; color: var(--accent);
         }
         .btn-copy:hover { background: var(--accent); color: white; }
+        .btn-copy.green { border-color: var(--green); color: var(--green); }
+        .btn-copy.green:hover { background: var(--green); color: white; }
         .btn-copy svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        /* ── PATIENT DETAILS (PDF export) ── */
+        .patient-details {
+            margin-top: 14px; border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm); overflow: hidden;
+        }
+        .patient-details summary {
+            padding: 10px 16px; font-size: 12px; font-weight: 600;
+            color: var(--text-muted); cursor: pointer; user-select: none;
+            background: var(--surface2); list-style: none;
+        }
+        .patient-details summary::-webkit-details-marker { display: none; }
+        .patient-details summary::before { content: '▸ '; transition: transform 0.2s; }
+        .patient-details[open] summary::before { content: '▾ '; }
+        .patient-fields {
+            display: flex; gap: 12px; padding: 12px 16px;
+            background: var(--surface);
+        }
+        .patient-fields .input-group { flex: 1; min-width: 0; }
+        .patient-fields input,
+        .patient-fields select {
+            width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+            padding: 8px 12px; font-size: 13px; font-family: 'Inter', sans-serif;
+            color: var(--text); background: var(--surface);
+            transition: border-color 0.2s;
+        }
+        .patient-fields input:focus,
+        .patient-fields select:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(26,58,92,0.10);
+        }
+        .actions-row {
+            display: flex; gap: 8px; align-items: center;
+            justify-content: flex-end; flex-wrap: wrap;
+        }
+        @media (max-width: 600px) {
+            .patient-fields { flex-direction: column; }
+            .actions-row { justify-content: center; }
+        }
 
         /* ── FOOTER ── */
         .app-footer { text-align: center; flex-shrink: 0; padding: 8px 0; }
@@ -930,6 +1058,14 @@
         </div>
     </div>
 
+    <!-- Phase 1 PDF button — analysis only -->
+    <div id="phase1-pdf-row" style="display:none; text-align:center; margin: 10px 0 4px;">
+        <button class="btn-copy green" onclick="generarPDF(true)">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Exportar PDF (análisis)
+        </button>
+    </div>
+
     <!-- ─── CORRECTION SECTION (Fase 2) ─── -->
     <div id="phase2-section" style="display:none">
         <div class="correction-card">
@@ -947,10 +1083,31 @@
                 <div id="micicoi-container"></div>
                 <div class="correction-grid" id="correction-grid"></div>
                 <div id="safety-rows"></div>
-                <div style="text-align:right;margin-top:10px">
+                <details class="patient-details" id="patient-details">
+                    <summary>Datos del paciente (opcional — solo para el PDF)</summary>
+                    <div class="patient-fields">
+                        <div class="input-group">
+                            <label>Nombre / ID</label>
+                            <input type="text" id="inp-paciente" placeholder="Anónimo">
+                        </div>
+                        <div class="input-group">
+                            <label>Lateralidad</label>
+                            <select id="inp-lateralidad">
+                                <option value="">—</option>
+                                <option value="Derecha">Derecha</option>
+                                <option value="Izquierda">Izquierda</option>
+                            </select>
+                        </div>
+                    </div>
+                </details>
+                <div class="actions-row" style="margin-top:10px">
                     <button class="btn-copy" onclick="copiarResumen()">
                         <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                         Copiar resumen
+                    </button>
+                    <button class="btn-copy green" onclick="generarPDF(false)">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Exportar PDF
                     </button>
                 </div>
             </div>
@@ -966,6 +1123,13 @@
     <div class="app-footer"><span>COT — Deformidades Coronales v1.0</span></div>
     <div id="toast" class="toast-banner"></div>
     <div id="d3-tooltip" class="d3-tooltip"></div>
+    <div id="seesaw-popover" class="seesaw-popover">
+        <button class="pop-close" onclick="cerrarSeesaw()">&times;</button>
+        <div class="pop-title">Efecto seesaw (balancín)</div>
+        <p>Cuando el JLCA es elevado (>2°), parte de la desviación es <strong>intra-articular</strong> — por desgaste cartilaginoso asimétrico y/o laxitud ligamentosa.</p>
+        <p>Al corregir el eje mecánico con una osteotomía, la carga se redistribuye: el compartimento colapsado se descarga y el JLCA <strong>se reduce espontáneamente</strong>. Es como un balancín: al mover un lado (hueso), el otro se mueve solo (articulación).</p>
+        <p>Sin anticiparlo, la corrección real sería mayor que la planificada → <strong>sobrecorrección en valgo</strong>. Micicoi propone restar (JLCA−2)/2 para compensar este efecto.</p>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -1190,10 +1354,16 @@ function planificarCorreccion(mHKA, targetHKA, mLDFA, mMPTA, JLCA, recoName, esV
 
     if (recoName === 'HTO') {
         targetMPTA = esVaro ? mMPTA + correccion : mMPTA - correccion;
-        if (targetMPTA > 92 && JLCA > 2) {
+        // Micicoi: aplicar siempre que JLCA > 2° (Micicoi et al. 2020)
+        // Fórmula: reducción = (JLCA - 2) / 2
+        if (JLCA > 2) {
             micicoi = true;
-            micicioiReduccion = JLCA / 2;
+            micicioiReduccion = (JLCA - 2) / 2;
             targetMPTA = targetMPTA - micicioiReduccion;
+        }
+        // JLCA > 6° → HTO contraindicada como procedimiento aislado
+        if (JLCA > 6) {
+            safetyWarnings.push('JLCA > 6°: HTO aislada contraindicada. Considerar prótesis unicompartimental o procedimiento combinado.');
         }
     } else if (recoName === 'DFO') {
         targetLDFA = esVaro ? mLDFA - correccion : mLDFA + correccion;
@@ -1204,9 +1374,10 @@ function planificarCorreccion(mHKA, targetHKA, mLDFA, mMPTA, JLCA, recoName, esV
         targetLDFA = esVaro ? mLDFA - femCorrec : mLDFA + femCorrec;
         const restante = correccion - (tibCorrec + femCorrec);
         if (restante > 0) targetMPTA += (esVaro ? restante : -restante);
-        if (targetMPTA > 92 && JLCA > 2) {
+        // Micicoi en componente tibial del DLO
+        if (JLCA > 2) {
             micicoi = true;
-            micicioiReduccion = JLCA / 2;
+            micicioiReduccion = (JLCA - 2) / 2;
             targetMPTA = targetMPTA - micicioiReduccion;
         }
     }
@@ -1282,25 +1453,42 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
     steps.push({ title: 'Diagnóstico diferencial', text: paso3 });
 
     // Paso 4
-    let paso4 = `Corrección necesaria: |mHKA - objetivo| = |${data.mhka} - ${data.target}| = ${v(correc.correccion.toFixed(1) + '°', 'accent')}.<br>`;
+    let paso4 = `Corrección total necesaria: |mHKA − objetivo| = |${data.mhka} − ${data.target}| = ${v(correc.correccion.toFixed(1) + '°', 'accent')}.<br>`;
+
+    // Helper to build arrow visual
+    function arrowVisual(label, actual, postop, delta, sign, micicoiDelta) {
+        let midHtml = `<span class="corr-delta">${sign}${delta}°</span>`;
+        if (micicoiDelta) midHtml += `<span class="corr-micicoi-delta">(−${micicoiDelta}° Micicoi)</span>`;
+        midHtml += `<span class="corr-arrow-line">→</span>`;
+        return `<div class="corr-arrow">` +
+            `<div class="corr-box actual"><div class="corr-label">${label} actual</div><div class="corr-value">${actual}°</div></div>` +
+            `<div class="corr-mid">${midHtml}</div>` +
+            `<div class="corr-box postop"><div class="corr-label">${label} postop</div><div class="corr-value">${postop}°</div></div>` +
+        `</div>`;
+    }
+
+    if (correc.micicoi) {
+        const correcOsea = correc.correccion - correc.micicioiReduccion;
+        paso4 += `${v('Micicoi', 'purple')} (<a class="ref-link" href="https://doi.org/10.1186/s40634-020-00283-1" target="_blank">Micicoi et al. 2020</a>): JLCA ${data.jlca}° > 2° → <a href="#" class="seesaw-link" onclick="mostrarSeesaw(event)">efecto seesaw</a>: −(${data.jlca}−2)/2 = ${v('−' + correc.micicioiReduccion.toFixed(1) + '°', 'purple')}<br>`;
+        paso4 += `Corrección ósea real: ${correc.correccion.toFixed(1)}° − ${correc.micicioiReduccion.toFixed(1)}° = ${v(correcOsea.toFixed(1) + '°', 'accent')}`;
+    }
+
     if (diag.recoName === 'HTO') {
-        paso4 += `Se aplica a la tibia: mMPTA postop = ${data.mmpta} + ${correc.correccion.toFixed(1)} = ${v((data.mmpta + correc.correccion).toFixed(1) + '°', 'accent')}`;
-        if (correc.micicoi) {
-            paso4 += `<br><br>${v('Método Micicoi aplicado', 'purple')}: como el MPTA postop planificado supera 92° (tipping point, <a class="ref-link" href="https://doi.org/10.1002/ksa.12121" target="_blank">Mabrouk et al. KSSTA 2024</a>), se anticipa efecto seesaw del JLCA. Se reduce la corrección tibial en JLCA/2 = ${data.jlca}/2 = ${v(correc.micicioiReduccion.toFixed(1) + '°', 'purple')}. mMPTA postop ajustado: ${v(correc.targetMPTA.toFixed(1) + '°', 'accent')}.`;
-        }
+        const correcTibial = correc.micicoi ? correc.correccion - correc.micicioiReduccion : correc.correccion;
+        const micicNote = correc.micicoi ? correc.micicioiReduccion.toFixed(1) : null;
+        paso4 += arrowVisual('mMPTA', data.mmpta.toFixed(1), correc.targetMPTA.toFixed(1), correcTibial.toFixed(1), '+', micicNote);
     } else if (diag.recoName === 'DFO') {
-        paso4 += `Se aplica al fémur: mLDFA postop = ${data.mldfa} - ${correc.correccion.toFixed(1)} = ${v(correc.targetLDFA.toFixed(1) + '°', 'accent')}`;
+        paso4 += arrowVisual('mLDFA', data.mldfa.toFixed(1), correc.targetLDFA.toFixed(1), correc.correccion.toFixed(1), '−', null);
     } else if (diag.recoName === 'DLO') {
         const tc = Math.abs(data.mmpta - 87);
         const fc = Math.abs(data.mldfa - 87);
-        paso4 += `Distribución en doble nivel:<br>`;
-        paso4 += `\u2022 Corrección tibial: normalizar mMPTA a 87° = ${v(tc.toFixed(1) + '°', 'accent')}<br>`;
-        paso4 += `\u2022 Corrección femoral: normalizar mLDFA a 87° = ${v(fc.toFixed(1) + '°', 'accent')}`;
-        if (correc.micicoi) {
-            paso4 += `<br><br>${v('Método Micicoi aplicado', 'purple')}: reducción tibial de JLCA/2 = ${v(correc.micicioiReduccion.toFixed(1) + '°', 'purple')}.`;
-        }
+        const tcAjustado = correc.micicoi ? tc - correc.micicioiReduccion : tc;
+        const micicNote = correc.micicoi ? correc.micicioiReduccion.toFixed(1) : null;
+        paso4 += `Distribución en doble nivel:`;
+        paso4 += arrowVisual('mMPTA', data.mmpta.toFixed(1), correc.targetMPTA.toFixed(1), tcAjustado.toFixed(1), '+', micicNote);
+        paso4 += arrowVisual('mLDFA', data.mldfa.toFixed(1), correc.targetLDFA.toFixed(1), fc.toFixed(1), '−', null);
     }
-    paso4 += `<br><br>Altura de cuña tibial estimada: ${TIBIAL_WIDTH}mm × tan(${correc.tibialCorrecAngle.toFixed(1)}°) = ${v(correc.wedgeHeight.toFixed(1) + ' mm', 'accent')}`;
+    paso4 += `Altura de cuña tibial estimada: ${TIBIAL_WIDTH}mm × tan(${correc.tibialCorrecAngle.toFixed(1)}°) = ${v(correc.wedgeHeight.toFixed(1) + ' mm', 'accent')}`;
     steps.push({ title: 'Planificación de la corrección', text: paso4 });
 
     // Paso 5
@@ -1650,9 +1838,10 @@ function renderPhase1() {
         }
     });
 
-    // Show phase 1, show phase 2 input
+    // Show phase 1, show phase 2 input, show phase 1 PDF button
     document.getElementById('phase1-section').classList.add('visible');
     document.getElementById('phase2-section').style.display = '';
+    document.getElementById('phase1-pdf-row').style.display = '';
     _hasCalculated = true;
 }
 
@@ -1682,6 +1871,8 @@ function onPostopEdit() {
     const tibCorrecAngle = Math.abs(mptaNew - window._postopCtx.mmptaOrig);
     const wedge = tibW * Math.tan(tibCorrecAngle * Math.PI / 180);
     document.getElementById('ci-wedge').textContent = wedge.toFixed(1) + ' mm';
+    const formulaEl = document.getElementById('ci-wedge-formula');
+    if (formulaEl) formulaEl.textContent = `${tibW} × tan(${tibCorrecAngle.toFixed(1)}°)`;
 
     // Actualizar clases warn/danger
     const mpBox = document.getElementById('ci-box-mmpta');
@@ -1728,11 +1919,17 @@ function onCalcularCorreccion() {
 
     // Micicoi
     if (correc.micicoi) {
+        const correcOsea = correc.correccion - correc.micicioiReduccion;
         document.getElementById('micicoi-container').innerHTML = `
-            <div class="micicoi-box">
-                <div class="micicoi-title">Método Micicoi (JLCA/2) aplicado</div>
-                <p>El MPTA postop planificado supera 92° (tipping point, <a class="ref-link" href="https://doi.org/10.1002/ksa.12121" target="_blank">Mabrouk et al. KSSTA 2024</a>). Se anticipa el efecto seesaw del JLCA y se reduce la corrección tibial en JLCA/2 = ${jlca}/2 = <strong>${correc.micicioiReduccion.toFixed(1)}°</strong>. Esto mejora la precisión del resultado postoperatorio.</p>
-            </div>
+            <details class="micicoi-box">
+                <summary class="micicoi-title">Método Micicoi aplicado (JLCA ${jlca}° > 2°) · corrección ósea real: ${correcOsea.toFixed(1)}°</summary>
+                <p>
+                    <strong>α</strong> = (JLCA − 2) / 2 = (${jlca} − 2) / 2 = <strong>${correc.micicioiReduccion.toFixed(1)}°</strong><br>
+                    Corrección partes blandas (<a href="#" class="seesaw-link" onclick="mostrarSeesaw(event)">efecto seesaw</a>): <strong>−${correc.micicioiReduccion.toFixed(1)}°</strong><br>
+                    Corrección ósea real: ${correc.correccion.toFixed(1)}° − ${correc.micicioiReduccion.toFixed(1)}° = <strong>${correcOsea.toFixed(1)}°</strong>
+                </p>
+                <p style="font-size:11px; margin-top:4px">Se aplica al hueso ${correcOsea.toFixed(1)}°. Los ${correc.micicioiReduccion.toFixed(1)}° restantes se corrigen espontáneamente al redistribuir la carga (<a class="ref-link" href="https://doi.org/10.1186/s40634-020-00283-1" target="_blank">Micicoi et al. 2020</a>).</p>
+            </details>
         `;
     } else {
         document.getElementById('micicoi-container').innerHTML = '';
@@ -1746,7 +1943,7 @@ function onCalcularCorreccion() {
         <div class="correction-item ${mpClr}" id="ci-box-mmpta"><div class="ci-label">mMPTA postop</div><div class="ci-value"><input type="number" class="ci-input" id="ci-mmpta" value="${correc.targetMPTA.toFixed(1)}" step="0.5" inputmode="decimal">°</div><div class="ci-note">Actual: <strong>${mmpta}°</strong> · Límite: <strong>&lt;95°</strong></div></div>
         <div class="correction-item" id="ci-box-mldfa"><div class="ci-label">mLDFA postop</div><div class="ci-value"><input type="number" class="ci-input" id="ci-mldfa" value="${correc.targetLDFA.toFixed(1)}" step="0.5" inputmode="decimal">°</div><div class="ci-note">Actual: <strong>${mldfa}°</strong> · Límite: <strong>84-90°</strong></div></div>
         <div class="correction-item ${jloClr}" id="ci-box-jlo"><div class="ci-label">JLO postop</div><div class="ci-value" id="ci-jlo">${correc.jloPostop.toFixed(1)}°</div><div class="ci-note">Límite: <strong>&lt;5°</strong></div></div>
-        <div class="correction-item" id="ci-box-wedge"><div class="ci-label">Altura cuña</div><div class="ci-value" id="ci-wedge">${correc.wedgeHeight.toFixed(1)} mm</div><div class="ci-note">Anchura tibial: <input type="number" class="ci-input-sm" id="ci-tibwidth" value="${TIBIAL_WIDTH}" step="1" inputmode="numeric"> mm <span style="font-size:10px;opacity:0.6">✏️</span></div></div>
+        <div class="correction-item" id="ci-box-wedge"><div class="ci-label">Altura cuña</div><div class="ci-value" id="ci-wedge">${correc.wedgeHeight.toFixed(1)} mm</div><div class="ci-note"><span id="ci-wedge-formula" style="font-size:10px;color:var(--text-muted)">${TIBIAL_WIDTH} × tan(${correc.tibialCorrecAngle.toFixed(1)}°)</span><br>Anchura tibial: <input type="number" class="ci-input-sm" id="ci-tibwidth" value="${TIBIAL_WIDTH}" step="1" inputmode="numeric"> mm <span style="font-size:10px;opacity:0.6">✏️</span></div></div>
         <div class="correction-hka-row" id="ci-box-hka"><div class="ci-label">HKA resultante</div><div class="ci-value" id="ci-hka">${hkaResultante.toFixed(1)}°</div></div>
     `;
 
@@ -1803,6 +2000,7 @@ function onLimpiar() {
     document.getElementById('phase2-section').style.display = 'none';
     document.getElementById('correction-results').style.display = 'none';
     document.getElementById('explanation-card').style.display = 'none';
+    document.getElementById('phase1-pdf-row').style.display = 'none';
     resetAkumaHighlight();
     document.getElementById('btn-aplicar-akuma').disabled = true;
     // Reset algorithm name to default
@@ -1855,16 +2053,284 @@ function copiarResumen() {
         `mLDFA: ${data.mldfa}° | mMPTA: ${data.mmpta}° | JLCA: ${data.jlca}°`,
         `IAD%: ${akuma.iadPct}% | EAD%: ${akuma.eadPct}% | T%: ${akuma.tPct}% | F%: ${akuma.fPct}%`,
         `Recomendación: ${diag.recoName} (${diag.recoVariant})`,
-        `Corrección: ${correc.correccion.toFixed(1)}°`,
-        `Postop: mMPTA ${correc.targetMPTA.toFixed(1)}° | mLDFA ${correc.targetLDFA.toFixed(1)}° | JLO ${correc.jloPostop.toFixed(1)}° | Cuña ${correc.wedgeHeight.toFixed(1)}mm`,
-        correc.micicoi ? `Micicoi aplicado: reducción JLCA/2 = ${correc.micicioiReduccion.toFixed(1)}°` : ''
+        `Corrección total: ${correc.correccion.toFixed(1)}°`,
+        correc.micicoi ? `Micicoi: partes blandas −${correc.micicioiReduccion.toFixed(1)}° → corrección ósea real ${(correc.correccion - correc.micicioiReduccion).toFixed(1)}°` : '',
+        `Postop: mMPTA ${correc.targetMPTA.toFixed(1)}° | mLDFA ${correc.targetLDFA.toFixed(1)}° | JLO ${correc.jloPostop.toFixed(1)}° | Cuña ${correc.wedgeHeight.toFixed(1)}mm`
     ].filter(Boolean).join('\n');
     navigator.clipboard.writeText(text).then(() => mostrarToast('Resumen copiado'));
 }
 
 // ─────────────────────────────────────────────
+//  PDF EXPORT (pdfmake)
+// ─────────────────────────────────────────────
+function generarPDF(soloAnalisis) {
+    // Gather data from Phase 1 (always available when button is visible)
+    const p1 = window._phase1;
+    if (!p1) { mostrarToast('Calcula primero los parámetros'); return; }
+
+    const { mhka, mldfa, mmpta, jlca, edad, clasificacion, akuma, diag, cpak } = p1;
+    const algoName = akuma.esVaro ? 'AKUMA' : 'AKULA';
+
+    // Phase 2 data (may not exist if soloAnalisis)
+    const r = window._lastResult;
+    const correc = (!soloAnalisis && r) ? r.correc : null;
+    const data = correc ? r.data : { mhka, mldfa, mmpta, jlca, edad };
+
+    // Optional patient fields
+    const paciente = document.getElementById('inp-paciente')?.value?.trim() || '';
+    const lateralidad = document.getElementById('inp-lateralidad')?.value || '';
+
+    const fecha = new Date().toLocaleDateString('es-ES');
+    const fechaFile = new Date().toISOString().slice(0, 10).split('-').reverse().join('-');
+
+    // ── Build content array ──
+    const content = [];
+
+    // Title
+    content.push({ text: 'INFORME PREOPERATORIO', style: 'titulo' });
+    content.push({ text: 'Análisis de Deformidad Coronal de Rodilla', style: 'subtitulo' });
+    content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }] });
+    content.push({ text: ' ' });
+
+    // Case data
+    content.push({ text: 'DATOS DEL CASO', style: 'seccion' });
+    const casoRows = [['Fecha', fecha], ['Edad', `${Math.round(data.edad)} años`]];
+    if (paciente) casoRows.push(['Paciente', paciente]);
+    if (lateralidad) casoRows.push(['Lateralidad', lateralidad]);
+    content.push({
+        table: {
+            widths: [100, '*'],
+            body: casoRows.map(([k, v]) => [
+                { text: k, style: 'labelTabla' },
+                { text: v, style: 'valorTablaLeft' }
+            ])
+        },
+        layout: { hLineWidth: () => 0.5, vLineWidth: () => 0, hLineColor: () => '#eeeeee', paddingTop: () => 4, paddingBottom: () => 4 }
+    });
+    content.push({ text: ' ' });
+
+    // Radiological parameters
+    content.push({ text: 'PARÁMETROS RADIOLÓGICOS', style: 'seccion' });
+    content.push({
+        table: {
+            widths: ['*', '*', '*', '*'],
+            body: [
+                [
+                    { text: 'mHKA', style: 'labelTabla' },
+                    { text: 'mLDFA', style: 'labelTabla' },
+                    { text: 'mMPTA', style: 'labelTabla' },
+                    { text: 'JLCA', style: 'labelTabla' }
+                ],
+                [
+                    { text: (data.mhka + 180).toFixed(1) + '°', style: 'valorTabla' },
+                    { text: data.mldfa + '°', style: 'valorTabla' },
+                    { text: data.mmpta + '°', style: 'valorTabla' },
+                    { text: data.jlca + '°', style: 'valorTabla' }
+                ]
+            ]
+        },
+        layout: 'lightHorizontalLines'
+    });
+    content.push({ text: ' ' });
+
+    // AKUMA/AKULA analysis
+    content.push({ text: `ANÁLISIS ${algoName}`, style: 'seccion' });
+    content.push({
+        table: {
+            widths: ['*', '*', '*', '*', '*', '*'],
+            body: [
+                [
+                    { text: 'GD', style: 'labelTabla' },
+                    { text: 'IAD%', style: 'labelTabla' },
+                    { text: 'EAD%', style: 'labelTabla' },
+                    { text: 'TD%', style: 'labelTabla' },
+                    { text: 'FD%', style: 'labelTabla' },
+                    { text: 'JLO', style: 'labelTabla' }
+                ],
+                [
+                    { text: akuma.GD.toFixed(1) + '°', style: 'valorTabla' },
+                    { text: akuma.iadPct + '%', style: 'valorTabla' },
+                    { text: akuma.eadPct + '%', style: 'valorTabla' },
+                    { text: akuma.tPct + '%', style: 'valorTabla' },
+                    { text: akuma.fPct + '%', style: 'valorTabla' },
+                    { text: (mldfa - mmpta).toFixed(1) + '°', style: 'valorTabla' }
+                ]
+            ]
+        },
+        layout: 'lightHorizontalLines'
+    });
+    content.push({ text: ' ' });
+
+    // Alignment & severity
+    content.push({ text: 'CLASIFICACIÓN', style: 'seccion' });
+    content.push({
+        table: {
+            widths: ['*', '*', '*'],
+            body: [
+                [
+                    { text: 'Alineación', style: 'labelTabla' },
+                    { text: 'Severidad', style: 'labelTabla' },
+                    { text: 'CPAK', style: 'labelTabla' }
+                ],
+                [
+                    { text: clasificacion.tipo, style: 'valorTabla', color: clasificacion.tipo === 'VARO' ? '#dc2626' : clasificacion.tipo === 'VALGO' ? '#3b82f6' : '#16a34a' },
+                    { text: clasificacion.severidad, style: 'valorTabla' },
+                    { text: `Tipo ${cpak.type}`, style: 'valorTabla' }
+                ]
+            ]
+        },
+        layout: 'lightHorizontalLines'
+    });
+    content.push({ text: ' ' });
+
+    // Diagnosis / recommendation
+    content.push({ text: 'DECISIÓN RECOMENDADA', style: 'seccion' });
+    content.push({ text: diag.recoName, style: 'decision' });
+    if (diag.recoVariant) {
+        content.push({ text: diag.recoVariant, style: 'decisionVariant' });
+    }
+    content.push({ text: diag.rationale.replace(/<[^>]*>/g, ''), style: 'rationale', margin: [0, 4, 0, 4] });
+
+    // Warnings
+    const allWarnings = [...(diag.warnings || [])];
+    if (correc) allWarnings.push(...(correc.safetyWarnings || []));
+    if (allWarnings.length > 0) {
+        content.push({ text: ' ' });
+        content.push({ text: 'AVISOS CLÍNICOS', style: 'seccion' });
+        content.push({
+            ul: allWarnings.map(w => w.replace(/<[^>]*>/g, '')),
+            style: 'warningList'
+        });
+    }
+
+    // Phase 2 — Correction planning (if available)
+    if (correc) {
+        content.push({ text: ' ' });
+        content.push({ text: 'PLANIFICACIÓN DE CORRECCIÓN — MÉTODO MIKULICZ', style: 'seccion' });
+        content.push({
+            table: {
+                widths: ['*', '*'],
+                body: [
+                    [{ text: 'Parámetro', style: 'labelTabla' }, { text: 'Valor', style: 'labelTabla' }],
+                    [{ text: 'HKA objetivo', style: 'labelLeft' }, { text: (data.target + 180).toFixed(1) + '°', style: 'valorTabla' }],
+                    [{ text: 'Corrección necesaria', style: 'labelLeft' }, { text: correc.correccion.toFixed(1) + '°', style: 'valorTabla', bold: true }],
+                    [{ text: 'mMPTA postop', style: 'labelLeft' }, { text: correc.targetMPTA.toFixed(1) + '°', style: 'valorTabla' }],
+                    [{ text: 'mLDFA postop', style: 'labelLeft' }, { text: correc.targetLDFA.toFixed(1) + '°', style: 'valorTabla' }],
+                    [{ text: 'JLO postop', style: 'labelLeft' }, { text: correc.jloPostop.toFixed(1) + '°', style: 'valorTabla' }],
+                    [{ text: 'Altura cuña', style: 'labelLeft' }, { text: correc.wedgeHeight.toFixed(1) + ' mm', style: 'valorTabla' }]
+                ]
+            },
+            layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#e5e7eb', vLineColor: () => '#e5e7eb', paddingTop: () => 5, paddingBottom: () => 5 }
+        });
+
+        if (correc.micicoi) {
+            const correcOsea = correc.correccion - correc.micicioiReduccion;
+            content.push({
+                text: `Método Micicoi (JLCA ${data.jlca}° > 2°): corrección total ${correc.correccion.toFixed(1)}° − partes blandas ${correc.micicioiReduccion.toFixed(1)}° (efecto seesaw) = corrección ósea real ${correcOsea.toFixed(1)}°. Los ${correc.micicioiReduccion.toFixed(1)}° restantes se corrigen espontáneamente al redistribuir la carga (Micicoi et al. 2020).`,
+                style: 'micicoi', margin: [0, 6, 0, 0]
+            });
+        }
+    }
+
+    // Legal disclaimer
+    content.push({ text: ' ' });
+    content.push({ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }] });
+    content.push({
+        text: 'AVISO LEGAL: Esta herramienta es un sistema de apoyo educativo y de planificación. ' +
+              'Toda decisión quirúrgica debe basarse en evaluación clínica completa, incluyendo ' +
+              'exploración física, estudios de imagen avanzados y consideración del estado funcional del paciente. ' +
+              'Los resultados no constituyen consejo médico.',
+        style: 'aviso', margin: [0, 8, 0, 8]
+    });
+
+    // References
+    content.push({ text: 'REFERENCIAS', style: 'seccion' });
+    content.push({
+        ul: [
+            'Ollivier M et al. Knee Surg Sports Traumatol Arthrosc. 2025 — Algoritmo AKUMA',
+            'Micicoi G et al. J Exp Orthop. 2020;7:74 — Método Micicoi (JLCA-2)/2',
+            'MacDessi SJ et al. Bone Joint J. 2021;103-B(2):329-337 — Clasificación CPAK',
+            'Lott A et al. J ISAKOS. 2024 — Osteotomías periarticulares de rodilla'
+        ],
+        style: 'referencia'
+    });
+
+    // ── Document definition ──
+    const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 60, 40, 60],
+        header: {
+            columns: [
+                { text: 'COT — Herramientas Clínicas', style: 'headerPage' },
+                { text: fecha, style: 'headerPage', alignment: 'right' }
+            ],
+            margin: [40, 20]
+        },
+        footer: function(currentPage, pageCount) {
+            return {
+                text: `jmacot.github.io/deformidad-coronal  ·  Página ${currentPage} de ${pageCount}`,
+                style: 'footerPage',
+                alignment: 'center',
+                margin: [0, 10]
+            };
+        },
+        content: content,
+        styles: {
+            titulo:        { fontSize: 18, bold: true, color: '#1a3a5c', margin: [0, 0, 0, 4] },
+            subtitulo:     { fontSize: 12, color: '#555555', margin: [0, 0, 0, 10] },
+            seccion:       { fontSize: 11, bold: true, color: '#1a3a5c', margin: [0, 10, 0, 6], decoration: 'underline' },
+            labelTabla:    { fontSize: 9, bold: true, color: '#666666', alignment: 'center', fillColor: '#f5f5f5' },
+            valorTabla:    { fontSize: 13, bold: true, alignment: 'center' },
+            valorTablaLeft:{ fontSize: 12, alignment: 'left' },
+            labelLeft:     { fontSize: 10, color: '#444444' },
+            decision:      { fontSize: 16, bold: true, color: '#1a3a5c', alignment: 'center', margin: [0, 6, 0, 2] },
+            decisionVariant:{ fontSize: 11, color: '#555555', alignment: 'center', margin: [0, 0, 0, 4] },
+            rationale:     { fontSize: 10, color: '#333333', lineHeight: 1.4 },
+            warningList:   { fontSize: 9, color: '#92400e', margin: [0, 0, 0, 4] },
+            micicoi:       { fontSize: 9, color: '#7c3aed', italics: true },
+            aviso:         { fontSize: 8, color: '#888888', italics: true, lineHeight: 1.3 },
+            referencia:    { fontSize: 9, color: '#444444' },
+            headerPage:    { fontSize: 9, color: '#999999' },
+            footerPage:    { fontSize: 8, color: '#aaaaaa' }
+        }
+    };
+
+    const filename = soloAnalisis
+        ? `informe-analisis-${fechaFile}.pdf`
+        : `informe-deformidad-${fechaFile}.pdf`;
+
+    pdfMake.createPdf(docDefinition).download(filename);
+    mostrarToast('PDF generado');
+}
+
+// ─────────────────────────────────────────────
 //  TOAST
 // ─────────────────────────────────────────────
+function mostrarSeesaw(event) {
+    event.preventDefault();
+    const pop = document.getElementById('seesaw-popover');
+    const rect = event.target.getBoundingClientRect();
+    pop.classList.add('visible');
+    // Position below the clicked word
+    let top = rect.bottom + 8;
+    let left = rect.left;
+    // Keep within viewport
+    if (top + 200 > window.innerHeight) top = rect.top - pop.offsetHeight - 8;
+    if (left + 360 > window.innerWidth) left = window.innerWidth - 370;
+    if (left < 10) left = 10;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+}
+function cerrarSeesaw() {
+    document.getElementById('seesaw-popover').classList.remove('visible');
+}
+document.addEventListener('click', (e) => {
+    const pop = document.getElementById('seesaw-popover');
+    if (pop.classList.contains('visible') && !pop.contains(e.target) && !e.target.classList.contains('seesaw-link')) {
+        cerrarSeesaw();
+    }
+});
+
 function mostrarToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
