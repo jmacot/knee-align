@@ -1,9 +1,9 @@
-# Deformidades Coronales
+# Knee Align
 
-Herramienta de analisis de deformidades coronales del miembro inferior basada en los algoritmos AKUMA (varo) y AKULA (valgo) de Ollivier et al. (KSSTA 2025).
+Herramienta de analisis de alineacion coronal de rodilla basada en los algoritmos AKUMA (varo) y AKULA (valgo) de Ollivier et al. (KSSTA 2025).
 
 ## Acceso directo
-[Abrir la aplicacion](https://jmacot.github.io/deformidad-coronal/)
+[Abrir la aplicacion](https://jmacot.github.io/knee-align/)
 
 ## Funcionalidades
 - Analisis de componentes de la deformidad (AKUMA para varo / AKULA para valgo): IAD%, EAD%, contribucion tibial y femoral
