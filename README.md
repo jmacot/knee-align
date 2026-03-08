@@ -13,9 +13,13 @@ Herramienta de analisis de deformidades coronales del miembro inferior basada en
 - Presentacion "correccion osea real": correccion total → partes blandas (seesaw) → correccion osea real
 - Visualizacion con flechas didacticas: mMPTA actual → (+X°) → mMPTA postop
 - Calculo de altura de cuna tibial con formula de Hernigou: D × tan(α), anchura tibial editable
+- Estimacion del slope tibial posterior (PPTA) segun variante quirurgica (MOWHTO/MCWHTO)
+- Recomendacion de placa (3+3 vs 4+4 orificios) segun altura de cuna (Ollivier et al. OTSR 2024)
+- Tooltip de variante quirurgica con implicaciones clinicas (abordaje, slope, riesgos, fijacion)
 - Popover educativo sobre el efecto seesaw al clicar en el termino
 - Exportacion PDF con pdfmake (informe preoperatorio completo)
 - Clasificacion CPAK (MacDessi 2021)
+- Zonas de Feucht para seleccion de objetivo HKA segun grado de artrosis (KL)
 - Visualizadores de rango interactivos para cada parametro
 - Explicacion educativa paso a paso del razonamiento clinico
 - Modo oscuro automatico

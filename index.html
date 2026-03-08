@@ -259,11 +259,10 @@
         .result-box.highlight .result-value { color: white; }
         .result-box.highlight .result-sublabel { color: rgba(255,255,255,0.75); }
 
-        /* CPAK result box — spans full row below */
+        /* CPAK result box — inline with other cards on desktop */
         .result-box.cpak-box {
-            grid-column: 1 / -1;
-            display: flex; align-items: center; justify-content: center; gap: 16px;
-            padding: 10px 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            padding: 12px 8px;
         }
         .result-box.cpak-box .cpak-mini-svg { margin: 0; flex-shrink: 0; }
         .result-box.cpak-box .cpak-info { text-align: center; }
@@ -700,6 +699,57 @@
             background: none; border: none; font-size: 16px;
             color: var(--text-light); cursor: pointer; line-height: 1;
         }
+        .variant-popover {
+            display: none; position: fixed; z-index: 9999;
+            background: var(--surface); color: var(--text);
+            border: 1.5px solid var(--green); border-radius: var(--radius-sm);
+            padding: 14px 16px; max-width: 380px; width: 90vw;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+            font-size: 12px; line-height: 1.65;
+        }
+        .variant-popover.visible { display: block; }
+        .variant-popover .pop-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--green); margin-bottom: 6px; letter-spacing: 0.5px;
+        }
+        .variant-popover table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        .variant-popover th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); padding: 3px 6px 3px 0; }
+        .variant-popover td { font-size: 12px; padding: 3px 6px 3px 0; }
+        .variant-popover .pop-close {
+            position: absolute; top: 6px; right: 8px;
+            background: none; border: none; font-size: 16px;
+            color: var(--text-light); cursor: pointer; line-height: 1;
+        }
+        [data-theme="dark"] .variant-popover {
+            background: var(--surface); border-color: #4ade80;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+        }
+        .variant-link {
+            cursor: pointer; border-bottom: 1px dotted var(--text-muted);
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .variant-link:hover { color: var(--green); border-bottom-color: var(--green); }
+        .ci-plate-rec {
+            margin-top: 5px; font-size: 10px; line-height: 1.5;
+        }
+        .ci-plate-badge {
+            display: inline-block; font-size: 10px; font-weight: 700;
+            padding: 1px 7px; border-radius: 4px;
+            background: var(--accent-light); color: var(--accent);
+        }
+        .ci-plate-ref {
+            font-size: 9px; color: var(--text-light); font-style: italic;
+            margin-top: 2px; line-height: 1.4;
+        }
+        .ci-slope-row {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            margin-top: 4px; font-size: 11px; color: var(--text-muted);
+        }
+        .ci-slope-row .slope-val { font-weight: 700; color: var(--accent); }
+        .ci-slope-row .slope-delta { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
+        .ci-slope-row .slope-ok { background: var(--green-light); color: var(--green); }
+        .ci-slope-row .slope-warn { background: var(--amber-light); color: var(--amber); }
+        .ci-slope-row .slope-danger { background: var(--red-light); color: var(--red); }
 
         /* ── STEP CARDS ── */
         .step-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -1012,6 +1062,7 @@
             <dt>HTO</dt> <dd> — Osteotomía tibial alta (High Tibial Osteotomy).</dd>
             <dt>DFO</dt> <dd> — Osteotomía femoral distal (Distal Femoral Osteotomy).</dd>
             <dt>DLO</dt> <dd> — Osteotomía de doble nivel (Double Level Osteotomy).</dd>
+            <dt>PPTA</dt> <dd> — Slope tibial posterior (Posterior Proximal Tibial Angle). Normal ~9° (rango 5-14°).</dd>
             <dt>UKA</dt> <dd> — Artroplastia unicompartimental de rodilla (Unicompartmental Knee Arthroplasty).</dd>
         </dl>
     </div>
@@ -1040,8 +1091,12 @@
                 <label>JLCA</label>
                 <input type="number" id="inp-jlca" min="0" max="15" step="0.1" placeholder="1" inputmode="decimal">
             </div>
+            <div class="input-group">
+                <label>PPTA</label>
+                <input type="number" id="inp-ppta" min="0" max="25" step="0.1" placeholder="—" inputmode="decimal">
+            </div>
         </div>
-        <div class="input-hint" style="text-align:center; margin-bottom: 4px;">mHKA: &lt;180° = varo / &gt;180° = valgo</div>
+        <div class="input-hint" style="text-align:center; margin-bottom: 4px;">mHKA: &lt;180° = varo / &gt;180° = valgo · PPTA: slope tibial (opcional)</div>
         <div class="btn-row">
             <button class="btn-calcular" onclick="renderPhase1()">Calcular</button>
             <button class="btn-reset" onclick="onLimpiar()">Restablecer</button>
@@ -1288,6 +1343,11 @@
             <li>Se calcula el porcentaje desde el margen medial por el que pasa la línea de Mikulicz.</li>
         </ul>
     </div>
+    <div id="variant-popover" class="variant-popover">
+        <button class="pop-close" onclick="cerrarVariante()">&times;</button>
+        <div class="pop-title" id="variant-pop-title"></div>
+        <div id="variant-pop-body"></div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -1478,7 +1538,9 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
             if (mpptaPostHTO > 90) reasons.push(`<span class="criterio-limite">mMPTA postop HTO &gt; 90°</span> &rarr; <span class="criterio-ok">Caso: ${mpptaPostHTO.toFixed(1)}° ✓</span><br><small>ESSKA permite hasta 93° (<a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a>)</small>`);
             if (jloPostHTO > 5) reasons.push(`<span class="criterio-limite">JLO postop HTO &gt; 5°</span> &rarr; <span class="criterio-ok">Caso: ${jloPostHTO.toFixed(1)}° ✓</span><br><small><a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a></small>`);
             if (correccion > 12.5) reasons.push(`<span class="criterio-limite">Corrección total &gt; 12.5°</span> &rarr; <span class="criterio-ok">Caso: ${correccion.toFixed(1)}° ✓</span>`);
-            recoVariant = 'DFO + HTO (típicamente DFO primero)';
+            const dloFemVar = esVaro ? 'LCWDFO' : 'MCWDFO';
+            const dloTibVar = esVaro ? 'MOWHTO' : 'MCWHTO';
+            recoVariant = `${dloFemVar} + ${dloTibVar} (típicamente DFO primero)`;
             rationale = `Deformidad extra-articular (EAD ${eadPct}%) · Contribución tibial ${tPct}% · Contribución femoral ${fPct}%<br><br><strong>Criterios para DLO — ¿Se cumplen?</strong><ul class="reco-reasons">${reasons.map(r => '<li>' + r + '</li>').join('')}</ul><small>Refs: <a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a> · <a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a> · <a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a></small>`;
             recoClass = 'dlo';
         } else {
@@ -1504,14 +1566,17 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
 // ─────────────────────────────────────────────
 //  PLANIFICACIÓN DE CORRECCIÓN
 // ─────────────────────────────────────────────
-function planificarCorreccion(mHKA, targetHKA, mLDFA, mMPTA, JLCA, recoName, esVaro) {
+function planificarCorreccion(mHKA, targetHKA, mLDFA, mMPTA, JLCA, recoName, esVaro, ppta) {
     const correccion = Math.abs(mHKA - targetHKA);
     let targetMPTA = mMPTA, targetLDFA = mLDFA;
     let micicoi = false, micicioiReduccion = 0;
     const safetyWarnings = [];
+    // Variante quirúrgica para tibia (necesario para slope)
+    let tibVariant = '';
 
     if (recoName === 'HTO') {
         targetMPTA = esVaro ? mMPTA + correccion : mMPTA - correccion;
+        tibVariant = esVaro ? 'MOWHTO' : 'MCWHTO';
         // Micicoi: aplicar siempre que JLCA > 2° (Micicoi et al. 2020)
         // Fórmula: reducción = (JLCA - 2) / 2
         if (JLCA > 2) {
@@ -1532,6 +1597,7 @@ function planificarCorreccion(mHKA, targetHKA, mLDFA, mMPTA, JLCA, recoName, esV
         targetLDFA = esVaro ? mLDFA - femCorrec : mLDFA + femCorrec;
         const restante = correccion - (tibCorrec + femCorrec);
         if (restante > 0) targetMPTA += (esVaro ? restante : -restante);
+        tibVariant = esVaro ? 'MOWHTO' : 'MCWHTO';
         // Micicoi en componente tibial del DLO
         if (JLCA > 2) {
             micicoi = true;
@@ -1546,11 +1612,29 @@ function planificarCorreccion(mHKA, targetHKA, mLDFA, mMPTA, JLCA, recoName, esV
 
     if (targetMPTA > 95) safetyWarnings.push(`MPTA postop ${targetMPTA.toFixed(1)}° > 95°: riesgo elevado de sobrecarga lateral.`);
     if (jloPostop > 5) safetyWarnings.push(`JLO postop ${jloPostop.toFixed(1)}° > 5°: oblicuidad de línea articular excesiva.`);
-    if (correccion > 15) safetyWarnings.push(`Corrección de ${correccion.toFixed(1)}° excesiva (>15°). Considerar procedimiento en 2 tiempos.`);
+
+    // Slope estimation (PPTA)
+    // MOWHTO (apertura medial): slope aumenta ~2° por cada 10° corrección frontal
+    // MCWHTO (cierre medial): slope disminuye ~2° por cada 10° corrección frontal
+    let slopePostop = null, slopeDelta = null;
+    if (!isNaN(ppta) && ppta > 0 && tibVariant) {
+        const tibCorrecFrontal = tibialCorrecAngle;
+        // ~2° cambio por cada 10° de corrección frontal
+        slopeDelta = (tibCorrecFrontal / 10) * 2;
+        if (tibVariant === 'MOWHTO') {
+            slopePostop = ppta + slopeDelta; // apertura medial aumenta slope
+        } else {
+            slopeDelta = -slopeDelta;
+            slopePostop = ppta + slopeDelta; // cierre medial reduce slope
+        }
+        if (slopePostop > 12) safetyWarnings.push(`Slope postop estimado ${slopePostop.toFixed(1)}° > 12°: riesgo aumentado de re-rotura LCA, inestabilidad en flexión.`);
+        if (slopePostop < 5) safetyWarnings.push(`Slope postop estimado ${slopePostop.toFixed(1)}° < 5°: puede limitar flexión de rodilla.`);
+    }
 
     return {
         correccion, targetMPTA, targetLDFA, jloPostop,
-        wedgeHeight, micicoi, micicioiReduccion, safetyWarnings, tibialCorrecAngle
+        wedgeHeight, micicoi, micicioiReduccion, safetyWarnings, tibialCorrecAngle,
+        slopePostop, slopeDelta, tibVariant
     };
 }
 
@@ -1582,8 +1666,8 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
         ? `\u2022 Deformidad extra-articular (EAD) = LDFA - MPTA = ${data.mldfa} - ${data.mmpta} = ${v(akuma.EAD.toFixed(1) + '°', 'accent')}<br>`
         : `\u2022 Deformidad extra-articular (EAD) = MPTA - LDFA = ${data.mmpta} - ${data.mldfa} = ${v(akuma.EAD.toFixed(1) + '°', 'accent')}<br>`;
     paso2 += `\u2022 Deformidad global (GD) = |EAD| + IAD = ${akuma.absEAD.toFixed(1)} + ${akuma.IAD.toFixed(1)} = ${v(akuma.GD.toFixed(1) + '°', 'accent')}<br>`;
-    paso2 += `\u2022 IAD% = ${v(akuma.iadPct + '%', 'amber')} / EAD% = ${v(akuma.eadPct + '%', 'accent')}`;
-    if (akuma.absEAD > 0) paso2 += `<br>\u2022 T% = ${v(akuma.tPct + '%', 'accent')} / F% = ${v(akuma.fPct + '%', 'purple')}`;
+    paso2 += `\u2022 Componente intra-articular (IAD%) = ${v(akuma.iadPct + '%', 'amber')} / Componente extra-articular (EAD%) = ${v(akuma.eadPct + '%', 'accent')}`;
+    if (akuma.absEAD > 0) paso2 += `<br>\u2022 Contribución tibial (T%) = ${v(akuma.tPct + '%', 'accent')} / Contribución femoral (F%) = ${v(akuma.fPct + '%', 'purple')}`;
     steps.push({ title: `Análisis ${algoName} — Localización de deformidad`, text: paso2 });
 
     // Paso 3
@@ -1968,12 +2052,16 @@ function renderPhase1() {
     if (akuma.absEAD > 0) { eadSection.style.display = ''; }
     else { eadSection.style.display = 'none'; }
 
-    // Recommendation
+    // Recommendation — variant as clickable link for tooltip (only for osteotomy variants)
+    const hasVariantInfo = /MOWHTO|MCWHTO|LCWDFO|MCWDFO/.test(diag.recoVariant);
+    const variantHtml = hasVariantInfo
+        ? `<span class="variant-link" onclick="mostrarVariante(event, '${diag.recoVariant.replace(/'/g, "\\'")}')">${diag.recoVariant}</span>`
+        : diag.recoVariant;
     document.getElementById('reco-container').innerHTML = `
         <div class="reco-box ${diag.recoClass}">
             <div class="reco-type">${diag.recoType}</div>
             <div class="reco-name">${diag.recoName}</div>
-            <div class="reco-variant">${diag.recoVariant}</div>
+            <div class="reco-variant">${variantHtml}</div>
             <div class="reco-rationale">${diag.rationale}</div>
         </div>
     `;
@@ -2007,6 +2095,15 @@ function renderPhase1() {
 }
 
 // ─────────────────────────────────────────────
+//  RECOMENDACIÓN DE PLACA (según altura de cuña)
+// ─────────────────────────────────────────────
+function getPlateRecHtml(wedgeMm) {
+    const plate = wedgeMm < 8 ? '3+3' : '4+4';
+    const label = wedgeMm < 8 ? 'Placa 3+3 orificios' : 'Placa 4+4 orificios';
+    return `<span class="ci-plate-badge">${label}</span> (cuña ${wedgeMm < 8 ? '<' : '≥'} 8 mm)<div class="ci-plate-ref">Ollivier et al. <em>Orthop Traumatol Surg Res</em> 2024</div>`;
+}
+
+// ─────────────────────────────────────────────
 //  RECÁLCULO EN TIEMPO REAL (inputs postop editables)
 // ─────────────────────────────────────────────
 function onPostopEdit() {
@@ -2024,8 +2121,9 @@ function onPostopEdit() {
     const jlo = Math.abs(mptaNew - ldfaNew);
     document.getElementById('ci-jlo').textContent = jlo.toFixed(1) + '°';
 
-    // HKA resultante (grados anatómicos)
-    const hka = mptaNew - ldfaNew + 180;
+    // HKA resultante: targetHKA + desviaciones manuales respecto al plan
+    const ctx = window._postopCtx;
+    const hka = ctx.targetHKA + (mptaNew - ctx.mptaPlanned) - (ldfaNew - ctx.ldfaPlanned);
     document.getElementById('ci-hka').textContent = hka.toFixed(1) + '°';
 
     // Delta badges
@@ -2050,15 +2148,18 @@ function onPostopEdit() {
     const wedgeEl = document.getElementById('ci-wedge');
     const formulaEl = document.getElementById('ci-wedge-formula');
     const tibwRaw = document.getElementById('ci-tibwidth').value;
+    const plateEl = document.getElementById('ci-plate-rec');
     if (tibwRaw && !isNaN(tibW) && tibW > 0) {
         const wedge = tibW * Math.tan(tibCorrecAngle * Math.PI / 180);
         wedgeEl.textContent = wedge.toFixed(1) + ' mm';
         wedgeEl.style.cssText = '';
         if (formulaEl) formulaEl.textContent = `${tibW} × tan(${tibCorrecAngle.toFixed(1)}°)`;
+        if (plateEl) plateEl.innerHTML = getPlateRecHtml(wedge);
     } else {
         wedgeEl.textContent = '—';
         wedgeEl.style.cssText = 'color:var(--text-light);font-size:13px';
         if (formulaEl) formulaEl.textContent = '';
+        if (plateEl) plateEl.innerHTML = '';
     }
 
     // Actualizar clases warn/danger
@@ -2071,6 +2172,16 @@ function onPostopEdit() {
     jloBox.classList.remove('warn', 'danger');
     if (jlo > 5) jloBox.classList.add('danger');
     else if (jlo > 4) jloBox.classList.add('warn');
+
+    // Recalcular slope si se proporcionó PPTA
+    const slopeEl = document.getElementById('ci-slope');
+    if (slopeEl && ctx.ppta && ctx.tibVariant) {
+        const tibCorrecNew = Math.abs(mptaNew - ctx.mmptaOrig);
+        let sDelta = (tibCorrecNew / 10) * 2;
+        if (ctx.tibVariant !== 'MOWHTO') sDelta = -sDelta;
+        const slopeNew = ctx.ppta + sDelta;
+        slopeEl.textContent = slopeNew.toFixed(1) + '°';
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -2137,9 +2248,10 @@ function onCalcularCorreccion() {
     const targetRaw = parseFloat(targetEl.value);
     const target = targetRaw - 180;
     const { mhka, mldfa, mmpta, jlca, edad, clasificacion, akuma, diag } = window._phase1;
-    const data = { mhka, mldfa, mmpta, jlca, edad, target };
+    const ppta = parseFloat(document.getElementById('inp-ppta').value);
+    const data = { mhka, mldfa, mmpta, jlca, edad, target, ppta };
 
-    const correc = planificarCorreccion(mhka, target, mldfa, mmpta, jlca, diag.recoName, akuma.esVaro);
+    const correc = planificarCorreccion(mhka, target, mldfa, mmpta, jlca, diag.recoName, akuma.esVaro, ppta);
     const steps = generarExplicacion(data, clasificacion, akuma, diag, correc);
 
     // Formula — always show anatomical degrees
@@ -2176,21 +2288,35 @@ function onCalcularCorreccion() {
     // Correction grid — editable inputs for mMPTA, mLDFA, anchura tibial
     const mpClr = correc.targetMPTA > 95 ? 'danger' : correc.targetMPTA > 93 ? 'warn' : '';
     const jloClr = correc.jloPostop > 5 ? 'danger' : correc.jloPostop > 4 ? 'warn' : '';
-    const hkaResultante = correc.targetMPTA - correc.targetLDFA + 180;
+    // HKA resultante: el plan logra exactamente el objetivo;
+    // desviaciones manuales del usuario se reflejan como deltas sobre targetRaw
+    const hkaResultante = targetRaw;
     const deltaMPTA = correc.targetMPTA - mmpta;
     const deltaLDFA = correc.targetLDFA - mldfa;
     const fmtDelta = d => (d >= 0 ? '+' : '') + d.toFixed(1) + '°';
     const deltaClass = d => Math.abs(d) < 0.05 ? 'ci-delta-zero' : d < 0 ? 'ci-delta-neg' : '';
+    // Slope row — only show if PPTA was provided and tibial osteotomy is involved
+    let slopeHtml = '';
+    if (correc.slopePostop !== null) {
+        const sClr = correc.slopePostop > 12 ? 'slope-danger' : correc.slopePostop < 5 ? 'slope-danger' : correc.slopePostop > 10 ? 'slope-warn' : 'slope-ok';
+        const sDelta = correc.slopeDelta >= 0 ? '+' + correc.slopeDelta.toFixed(1) : correc.slopeDelta.toFixed(1);
+        const slopeExplain = correc.tibVariant === 'MOWHTO'
+            ? 'La apertura medial aumenta el slope posterior (~2° por cada 10° de corrección frontal)'
+            : 'El cierre medial disminuye el slope posterior (~2° por cada 10° de corrección frontal)';
+        slopeHtml = `<div class="correction-item" id="ci-box-slope"><div class="ci-label">Slope postop (PPTA)</div><div class="ci-value" id="ci-slope">${correc.slopePostop.toFixed(1)}°</div><div class="ci-note"><div class="ci-slope-row">${ppta.toFixed(1)}° <span class="slope-delta ${sClr}">${sDelta}°</span> <span class="slope-val">${correc.slopePostop.toFixed(1)}°</span></div><span style="font-size:10px;line-height:1.4;display:block;margin-top:3px">${slopeExplain}</span>Normal: <strong>5-12°</strong></div></div>`;
+    }
+
     document.getElementById('correction-grid').innerHTML = `
         <div class="correction-item ${mpClr}" id="ci-box-mmpta"><div class="ci-label">mMPTA postop</div><div class="ci-value"><input type="number" class="ci-input" id="ci-mmpta" value="${correc.targetMPTA.toFixed(1)}" step="0.5" inputmode="decimal">°</div><div class="ci-note"><span class="ci-delta-row">${mmpta}° <span class="ci-delta-badge ${deltaClass(deltaMPTA)}" id="ci-delta-mmpta">${fmtDelta(deltaMPTA)}</span> ${correc.targetMPTA.toFixed(1)}°</span><br>Límite: <strong>&lt;95°</strong></div></div>
         <div class="correction-item" id="ci-box-mldfa"><div class="ci-label">mLDFA postop</div><div class="ci-value"><input type="number" class="ci-input" id="ci-mldfa" value="${correc.targetLDFA.toFixed(1)}" step="0.5" inputmode="decimal">°</div><div class="ci-note"><span class="ci-delta-row">${mldfa}° <span class="ci-delta-badge ${deltaClass(deltaLDFA)}" id="ci-delta-mldfa">${fmtDelta(deltaLDFA)}</span> ${correc.targetLDFA.toFixed(1)}°</span><br>Límite: <strong>84-90°</strong></div></div>
         <div class="correction-item ${jloClr}" id="ci-box-jlo"><div class="ci-label">JLO postop</div><div class="ci-value" id="ci-jlo">${correc.jloPostop.toFixed(1)}°</div><div class="ci-note">Límite: <strong>&lt;5°</strong></div></div>
-        <div class="correction-item" id="ci-box-wedge"><div class="ci-label">Altura cuña</div><div class="ci-value" id="ci-wedge" style="color:var(--text-light);font-size:13px">—</div><div class="ci-note"><span id="ci-wedge-formula" style="font-size:10px;color:var(--text-muted)"></span>Anchura tibial: <input type="number" class="ci-input-sm" id="ci-tibwidth" value="" placeholder="mm" step="1" inputmode="numeric"> mm</div></div>
+        ${slopeHtml}
+        <div class="correction-item" id="ci-box-wedge"><div class="ci-label">Altura cuña</div><div class="ci-value" id="ci-wedge" style="color:var(--text-light);font-size:13px">—</div><div class="ci-note"><span id="ci-wedge-formula" style="font-size:10px;color:var(--text-muted)"></span>Anchura tibial: <input type="number" class="ci-input-sm" id="ci-tibwidth" value="" placeholder="mm" step="1" inputmode="numeric"> mm<br><span style="font-size:10px;color:var(--text-light)">&#9794; 70-80 mm / &#9792; 60-70 mm</span><div class="ci-plate-rec" id="ci-plate-rec"></div></div></div>
         <div class="correction-hka-row" id="ci-box-hka"><div class="ci-label">HKA resultante</div><div class="ci-value" id="ci-hka">${hkaResultante.toFixed(1)}°</div></div>
     `;
 
     // Store original preop values for wedge recalculation
-    window._postopCtx = { mmptaOrig: mmpta, mldfaOrig: mldfa };
+    window._postopCtx = { mmptaOrig: mmpta, mldfaOrig: mldfa, targetHKA: targetRaw, mptaPlanned: correc.targetMPTA, ldfaPlanned: correc.targetLDFA, ppta: ppta, tibVariant: correc.tibVariant, tibCorrecAngle: correc.tibialCorrecAngle };
 
     // Attach listeners to editable inputs
     ['ci-mmpta', 'ci-mldfa', 'ci-tibwidth'].forEach(id => {
@@ -2237,6 +2363,7 @@ analysisInputs.forEach(id => {
 
 function onLimpiar() {
     analysisInputs.forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('inp-ppta').value = '';
     document.getElementById('inp-target').value = 180;
     document.getElementById('inp-wbl').value = '';
     document.getElementById('inp-plateau').value = 75;
@@ -2469,7 +2596,8 @@ function generarPDF(soloAnalisis) {
                     [{ text: 'mMPTA postop', style: 'labelLeft' }, { text: correc.targetMPTA.toFixed(1) + '°', style: 'valorTabla' }],
                     [{ text: 'mLDFA postop', style: 'labelLeft' }, { text: correc.targetLDFA.toFixed(1) + '°', style: 'valorTabla' }],
                     [{ text: 'JLO postop', style: 'labelLeft' }, { text: correc.jloPostop.toFixed(1) + '°', style: 'valorTabla' }],
-                    [{ text: 'Altura cuña', style: 'labelLeft' }, { text: correc.wedgeHeight.toFixed(1) + ' mm', style: 'valorTabla' }]
+                    [{ text: 'Altura cuña', style: 'labelLeft' }, { text: correc.wedgeHeight.toFixed(1) + ' mm', style: 'valorTabla' }],
+                    [{ text: 'Placa recomendada', style: 'labelLeft' }, { text: correc.wedgeHeight < 8 ? 'Placa 3+3 orificios (cuña < 8 mm)' : 'Placa 4+4 orificios (cuña ≥ 8 mm)', style: 'valorTabla', fontSize: 9 }]
                 ]
             },
             layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, hLineColor: () => '#e5e7eb', vLineColor: () => '#e5e7eb', paddingTop: () => 5, paddingBottom: () => 5 }
@@ -2603,6 +2731,102 @@ document.addEventListener('click', (e) => {
     const pop = document.getElementById('wblr-popover');
     if (pop.classList.contains('visible') && !pop.contains(e.target) && !e.target.classList.contains('wblr-link')) {
         cerrarWBLR();
+    }
+});
+
+// ─────────────────────────────────────────────
+//  VARIANT TOOLTIP — implicaciones clínicas
+// ─────────────────────────────────────────────
+const VARIANT_INFO = {
+    'MOWHTO': {
+        title: 'HTO apertura cuña medial (MOWHTO)',
+        abordaje: 'Anteromedial',
+        slope: 'Aumenta slope posterior ~2° por cada 10° de corrección',
+        riesgos: 'Fractura bisagra lateral, necesita injerto si apertura >10 mm',
+        fijacion: 'Placa bloqueada anteromedial (TomoFix o similar)',
+        nota: 'Variante más frecuente en HTO para varo'
+    },
+    'MCWHTO': {
+        title: 'HTO cierre cuña medial (MCWHTO)',
+        abordaje: 'Anteromedial, infra-tuberosidad',
+        slope: 'Disminuye slope posterior ~2° por cada 10° de corrección',
+        riesgos: 'Acortamiento del miembro, lesión nervio peroneo (raro)',
+        fijacion: 'Placa + grapas o placa bloqueada medial',
+        nota: 'Útil si slope preop elevado (>12°) y se desea reducirlo'
+    },
+    'LCWDFO': {
+        title: 'DFO cierre cuña lateral (LCWDFO)',
+        abordaje: 'Lateral del fémur distal',
+        slope: 'Mínimo efecto sobre slope tibial',
+        riesgos: 'Acortamiento del miembro, rigidez de rodilla, fractura bisagra medial',
+        fijacion: 'Placa bloqueada lateral (TomoFix distal o LCP)',
+        nota: 'Variante habitual para corrección de varo femoral'
+    },
+    'MCWDFO': {
+        title: 'DFO cierre cuña medial (MCWDFO)',
+        abordaje: 'Medial del fémur distal',
+        slope: 'Mínimo efecto sobre slope tibial',
+        riesgos: 'Proximidad a vasos femorales, acortamiento del miembro',
+        fijacion: 'Placa bloqueada medial',
+        nota: 'Para corrección de valgo femoral'
+    }
+};
+
+function mostrarVariante(event, variantText) {
+    event.stopPropagation();
+    // Extract variant key(s) from text — may have 1 or 2 (DLO has both)
+    const matches = variantText.match(/(MOWHTO|MCWHTO|LCWDFO|MCWDFO)/g);
+    if (!matches) return;
+
+    const pop = document.getElementById('variant-popover');
+    if (matches.length === 1) {
+        const info = VARIANT_INFO[matches[0]];
+        if (!info) return;
+        document.getElementById('variant-pop-title').textContent = info.title;
+        document.getElementById('variant-pop-body').innerHTML = `
+            <table>
+                <tr><th>Abordaje</th><td>${info.abordaje}</td></tr>
+                <tr><th>Efecto slope</th><td>${info.slope}</td></tr>
+                <tr><th>Riesgos</th><td>${info.riesgos}</td></tr>
+                <tr><th>Fijación</th><td>${info.fijacion}</td></tr>
+            </table>
+            <p style="margin-top:8px;font-size:11px;color:var(--text-light);font-style:italic">${info.nota}</p>
+        `;
+    } else {
+        // DLO: show both variants
+        document.getElementById('variant-pop-title').textContent = 'Variantes quirúrgicas — DLO';
+        let html = '';
+        matches.forEach((key, i) => {
+            const info = VARIANT_INFO[key];
+            if (!info) return;
+            if (i > 0) html += '<hr style="border:none;border-top:1px solid var(--border);margin:8px 0">';
+            html += `<div style="font-weight:700;font-size:12px;color:var(--accent);margin-bottom:4px">${info.title}</div>
+            <table>
+                <tr><th>Abordaje</th><td>${info.abordaje}</td></tr>
+                <tr><th>Efecto slope</th><td>${info.slope}</td></tr>
+                <tr><th>Riesgos</th><td>${info.riesgos}</td></tr>
+                <tr><th>Fijación</th><td>${info.fijacion}</td></tr>
+            </table>`;
+        });
+        document.getElementById('variant-pop-body').innerHTML = html;
+    }
+    pop.classList.add('visible');
+    const rect = event.target.getBoundingClientRect();
+    let top = rect.bottom + 8;
+    let left = rect.left;
+    if (top + 220 > window.innerHeight) top = rect.top - pop.offsetHeight - 8;
+    if (left + 380 > window.innerWidth) left = window.innerWidth - 390;
+    if (left < 10) left = 10;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+}
+function cerrarVariante() {
+    document.getElementById('variant-popover').classList.remove('visible');
+}
+document.addEventListener('click', (e) => {
+    const pop = document.getElementById('variant-popover');
+    if (pop.classList.contains('visible') && !pop.contains(e.target) && !e.target.classList.contains('variant-link')) {
+        cerrarVariante();
     }
 });
 
