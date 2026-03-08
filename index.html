@@ -636,6 +636,7 @@
             font-size: 13px; font-weight: 700; color: var(--green);
             white-space: nowrap;
         }
+        .corr-mid .corr-delta.neg { color: var(--red); }
         .corr-mid .corr-arrow-line {
             font-size: 16px; color: var(--text-light); line-height: 1;
         }
@@ -1540,7 +1541,9 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
             if (correccion > 12.5) reasons.push(`<span class="criterio-limite">Corrección total &gt; 12.5°</span> &rarr; <span class="criterio-ok">Caso: ${correccion.toFixed(1)}° ✓</span>`);
             const dloFemVar = esVaro ? 'LCWDFO' : 'MCWDFO';
             const dloTibVar = esVaro ? 'MOWHTO' : 'MCWHTO';
-            recoVariant = `${dloFemVar} + ${dloTibVar} (típicamente DFO primero)`;
+            const dloFemEs = esVaro ? 'Cierre cuña lateral femoral' : 'Cierre cuña medial femoral';
+            const dloTibEs = esVaro ? 'Apertura cuña medial tibial' : 'Cierre cuña medial tibial';
+            recoVariant = `${dloFemEs} (${dloFemVar}) + ${dloTibEs} (${dloTibVar})`;
             rationale = `Deformidad extra-articular (EAD ${eadPct}%) · Contribución tibial ${tPct}% · Contribución femoral ${fPct}%<br><br><strong>Criterios para DLO — ¿Se cumplen?</strong><ul class="reco-reasons">${reasons.map(r => '<li>' + r + '</li>').join('')}</ul><small>Refs: <a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a> · <a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a> · <a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a></small>`;
             recoClass = 'dlo';
         } else {
@@ -1699,7 +1702,8 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
 
     // Helper to build arrow visual
     function arrowVisual(label, actual, postop, delta, sign, micicoiDelta) {
-        let midHtml = `<span class="corr-delta">${sign}${delta}°</span>`;
+        const negClass = sign === '−' ? ' neg' : '';
+        let midHtml = `<span class="corr-delta${negClass}">${sign}${delta}°</span>`;
         if (micicoiDelta) midHtml += `<span class="corr-micicoi-delta">(−${micicoiDelta}° Micicoi)</span>`;
         midHtml += `<span class="corr-arrow-line">→</span>`;
         return `<div class="corr-arrow">` +
@@ -1722,13 +1726,12 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
     } else if (diag.recoName === 'DFO') {
         paso4 += arrowVisual('mLDFA', data.mldfa.toFixed(1), correc.targetLDFA.toFixed(1), correc.correccion.toFixed(1), '−', null);
     } else if (diag.recoName === 'DLO') {
-        const tc = Math.abs(data.mmpta - 87);
-        const fc = Math.abs(data.mldfa - 87);
-        const tcAjustado = correc.micicoi ? tc - correc.micicioiReduccion : tc;
+        const tibDelta = Math.abs(correc.targetMPTA - data.mmpta);
+        const femDelta = Math.abs(correc.targetLDFA - data.mldfa);
         const micicNote = correc.micicoi ? correc.micicioiReduccion.toFixed(1) : null;
         paso4 += `Distribución en doble nivel:`;
-        paso4 += arrowVisual('mMPTA', data.mmpta.toFixed(1), correc.targetMPTA.toFixed(1), tcAjustado.toFixed(1), '+', micicNote);
-        paso4 += arrowVisual('mLDFA', data.mldfa.toFixed(1), correc.targetLDFA.toFixed(1), fc.toFixed(1), '−', null);
+        paso4 += arrowVisual('mMPTA', data.mmpta.toFixed(1), correc.targetMPTA.toFixed(1), tibDelta.toFixed(1), '+', micicNote);
+        paso4 += arrowVisual('mLDFA', data.mldfa.toFixed(1), correc.targetLDFA.toFixed(1), femDelta.toFixed(1), '−', null);
     }
     paso4 += `Altura de cuña tibial estimada: ${TIBIAL_WIDTH}mm × tan(${correc.tibialCorrecAngle.toFixed(1)}°) = ${v(correc.wedgeHeight.toFixed(1) + ' mm', 'accent')}`;
     steps.push({ title: 'Planificación de la corrección', text: paso4 });
@@ -2004,7 +2007,7 @@ function renderPhase1() {
         <div class="result-box"><div class="result-label">Intra-articular</div><div class="result-value">${akuma.iadPct}%</div><div class="result-sublabel" style="color:var(--amber)">JLCA ${_jlca}°</div></div>
         <div class="result-box"><div class="result-label">Extra-articular</div><div class="result-value">${akuma.eadPct}%</div><div class="result-sublabel" style="color:var(--blue)">${eadLabel}</div></div>
         <div class="result-box cpak-box"><div class="result-label">CPAK</div><div class="result-value">Tipo ${cpak.type}</div><div class="result-sublabel">${cpak.hkaCat === 'Neutral' ? 'Neutro' : cpak.hkaCat === 'Varus' ? 'Varo' : 'Valgo'} · ${cpak.jloCat === 'Neutral' ? 'JLO Neutro' : cpak.jloCat}</div><a class="cpak-link" href="${cpakUrl}" target="_blank" title="Abrir calculadora CPAK"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/><rect x="8" y="5" width="8" height="3" rx="0.5"/></svg>CPAK</a></div>
-        <div class="result-box highlight" style="grid-column:1/-1"><div class="result-label">Indicación</div><div class="result-value" style="font-size:22px">${diag.recoName}</div><div class="result-sublabel">${diag.recoVariant ? diag.recoVariant.split('(')[0].trim() : ''}</div></div>
+        <div class="result-box highlight" style="grid-column:1/-1"><div class="result-label">Indicación</div><div class="result-value" style="font-size:22px">${diag.recoName}</div><div class="result-sublabel">${diag.recoVariant || ''}</div></div>
     `;
 
     // Component analysis — with varo/valgo direction
