@@ -2214,15 +2214,26 @@ function renderRangeIndicator(containerId, value, cfg) {
 
     const x = d3.scaleLinear().domain([cfg.min, cfg.max]).range([margin.left, margin.left + w]).clamp(true);
 
-    // Zone bars — normal zone prominent, extremes faded
+    // Determine if value falls in the normal (green) zone
+    const inNormal = cfg.zones.some(z => z.color.includes('green') && value >= z.from && value <= z.to);
+
+    // Zone bars — highlight only the zone where the value falls
     cfg.zones.forEach(z => {
-        const isNormal = z.color.includes('green');
+        const isGreen = z.color.includes('green');
+        const valueInThisZone = value >= z.from && value <= z.to;
+        let opacity;
+        if (inNormal) {
+            opacity = isGreen ? 0.45 : 0.1;
+        } else {
+            // Abnormal: highlight only the red zone containing the value
+            opacity = isGreen ? 0.15 : (valueInThisZone ? 0.35 : 0.1);
+        }
         svg.append('rect')
             .attr('x', x(z.from)).attr('y', barY)
             .attr('width', x(z.to) - x(z.from)).attr('height', barH)
             .attr('rx', 4).attr('ry', 4)
             .attr('fill', isDark ? z.colorDark : z.color)
-            .attr('opacity', isNormal ? 0.45 : 0.1);
+            .attr('opacity', opacity);
     });
     // Normal zone label
     const greenZone = cfg.zones.find(z => z.color.includes('green'));
@@ -2234,7 +2245,7 @@ function renderRangeIndicator(containerId, value, cfg) {
             .attr('text-anchor', 'middle')
             .attr('font-size', '8px').attr('font-weight', '700')
             .attr('font-family', 'Inter, sans-serif')
-            .attr('fill', isDark ? '#4ade80' : '#16a34a')
+            .attr('fill', inNormal ? (isDark ? '#4ade80' : '#16a34a') : (isDark ? '#2a5e3e' : '#a7d5b8'))
             .attr('letter-spacing', '0.5px')
             .text('NORMAL');
     }
@@ -2261,7 +2272,6 @@ function renderRangeIndicator(containerId, value, cfg) {
 
     // Value marker — clamp to visible range
     const vx = x(Math.max(cfg.min, Math.min(cfg.max, value)));
-    const inNormal = cfg.zones.some(z => z.color.includes('green') && value >= z.from && value <= z.to);
     const markerColor = inNormal ? (isDark ? '#4ade80' : '#16a34a') :
         cfg.zones.some(z => z.color.includes('amber') && value >= z.from && value <= z.to) ? (isDark ? '#fbbf24' : '#c0540a') :
         (isDark ? '#f87171' : '#dc2626');
