@@ -331,7 +331,7 @@
             font-size: 11px; color: var(--text-light); padding: 4px 0;
         }
         .akuma-summary {
-            font-size: 12px; line-height: 1.7; color: var(--text-muted);
+            font-size: 13px; line-height: 1.7; color: var(--text-muted);
             padding: 12px 16px; margin-top: 8px;
             background: var(--accent-light); border-radius: var(--radius-sm);
             border-left: 3px solid var(--accent);
@@ -2231,14 +2231,6 @@ function renderPhase1() {
     // JLCA direction
     const jlcaDir = _jlca <= 2 ? 'Normal' : (akuma.esVaro ? 'Contribución al varo' : 'Contribución al valgo');
 
-    // JLCA description when altered
-    let jlcaDesc = '';
-    if (_jlca > 2 && _jlca <= 4) {
-        jlcaDesc = 'Desgaste articular y/o laxitud de partes blandas. Parte de la deformidad se corrige al cargar el eje.';
-    } else if (_jlca > 4) {
-        jlcaDesc = 'Componente intra-articular significativo: desgaste cartilaginoso y/o laxitud ligamentosa. Limita la corrección ósea.';
-    }
-
     document.getElementById('component-rows').innerHTML = `
         <div class="comp-cards">
             <div class="comp-card ${ldfaStatus}">
@@ -2264,7 +2256,6 @@ function renderPhase1() {
                 </div>
                 <div class="comp-card-value">${_jlca}°</div>
                 <div class="comp-card-range" id="range-jlca"></div>
-                ${jlcaDesc ? `<div class="comp-card-desc">${jlcaDesc}</div>` : ''}
             </div>
         </div>
     `;
