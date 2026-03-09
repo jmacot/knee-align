@@ -280,7 +280,75 @@
         .result-box .cpak-link:hover { opacity: 1; }
         .result-box .cpak-link svg { width: 12px; height: 12px; }
 
-        /* ── INFO ROWS ── */
+        /* ── COMPONENT CARDS ── */
+        .comp-cards {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-bottom: 8px;
+        }
+        .comp-card {
+            background: var(--surface); border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            display: grid; grid-template-columns: 140px 1fr; grid-template-rows: auto auto;
+            gap: 2px 16px; align-items: center;
+            border-left: 4px solid var(--border-light);
+        }
+        .comp-card.green { border-left-color: var(--green); }
+        .comp-card.amber { border-left-color: var(--amber); }
+        .comp-card.rose { border-left-color: var(--red); }
+        .comp-card-head {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+            grid-column: 1; grid-row: 1;
+        }
+        .comp-card-label {
+            font-size: 11px; font-weight: 700; color: var(--text-light);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .comp-card-angle {
+            font-size: 10px; font-weight: 500; color: var(--text-light);
+            opacity: 0.7;
+        }
+        .comp-card-badge {
+            font-size: 10px; font-weight: 700; padding: 2px 8px;
+            border-radius: 999px; white-space: nowrap;
+        }
+        .comp-card-badge.green { background: var(--green-light); color: #166534; }
+        .comp-card-badge.amber { background: var(--amber-light); color: #92400e; }
+        .comp-card-badge.rose { background: var(--red-light); color: #991b1b; }
+        .comp-card-value {
+            font-size: 24px; font-weight: 700; color: var(--text); line-height: 1.2;
+            grid-column: 1; grid-row: 2;
+        }
+        .comp-card-range {
+            grid-column: 2; grid-row: 1 / 3; align-self: center;
+            width: 100%; overflow: visible;
+        }
+        .comp-card-range svg { display: block; width: 100%; height: auto; }
+        .comp-card-desc {
+            font-size: 11px; color: var(--text-muted); line-height: 1.5;
+            grid-column: 1 / -1; margin-top: 2px;
+        }
+        .comp-verify {
+            font-size: 11px; color: var(--text-light); padding: 4px 0;
+        }
+        .akuma-summary {
+            font-size: 12px; line-height: 1.7; color: var(--text-muted);
+            padding: 12px 16px; margin-top: 8px;
+            background: var(--accent-light); border-radius: var(--radius-sm);
+            border-left: 3px solid var(--accent);
+        }
+        .akuma-summary-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--accent); margin-bottom: 6px;
+        }
+        .akuma-summary strong { color: var(--text); font-weight: 600; }
+        .akuma-summary .sum-line { display: flex; align-items: baseline; gap: 6px; }
+        .akuma-summary .sum-line + .sum-line { margin-top: 4px; }
+        .akuma-summary .sum-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+            position: relative; top: -1px;
+        }
+
+        /* ── INFO ROWS (legacy — used in other sections) ── */
         .info-row {
             display: flex; align-items: flex-start; gap: 12px;
             padding: 12px 14px; border-radius: var(--radius-sm);
@@ -986,6 +1054,11 @@
             --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);
             --shadow-hover: 0 20px 25px -5px rgb(0 0 0 / 0.3);
         }
+        [data-theme="dark"] .comp-card { background: var(--surface); border-color: var(--border); }
+        [data-theme="dark"] .comp-card-badge.green { background: #14352a; color: #4ade80; }
+        [data-theme="dark"] .comp-card-badge.amber { background: #3b2a10; color: #fbbf24; }
+        [data-theme="dark"] .comp-card-badge.rose { background: #3b1010; color: #f87171; }
+        [data-theme="dark"] .akuma-summary { background: rgba(147,197,253,0.08); border-left-color: var(--accent); }
         [data-theme="dark"] .info-row.blue { background: #1e2a4a; color: #93c5fd; }
         [data-theme="dark"] .info-row.green { background: #14352a; color: #4ade80; }
         [data-theme="dark"] .info-row.amber { background: #3b2a10; color: #fbbf24; }
@@ -1175,6 +1248,7 @@
                 <div class="contrib-label">Contribución</div>
                 <div class="d3-chart-wrap" id="bar-tf"></div>
             </div>
+            <div id="akuma-summary" class="akuma-summary" style="display:none"></div>
         </div>
 
         <!-- Diagnóstico Diferencial -->
@@ -1911,6 +1985,92 @@ function renderContribBar(containerId, segments, legendId) {
     }
 }
 
+// ─────────────────────────────────────────────
+//  RANGE INDICATOR (D3 mini chart)
+// ─────────────────────────────────────────────
+function renderRangeIndicator(containerId, value, cfg) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = '';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const W = 280, H = 52;
+    const margin = { left: 14, right: 14, top: 24, bottom: 14 };
+    const w = W - margin.left - margin.right;
+    const barH = 10;
+    const barY = margin.top;
+
+    const svg = d3.select(el).append('svg')
+        .attr('width', W).attr('height', H)
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet');
+
+    const x = d3.scaleLinear().domain([cfg.min, cfg.max]).range([margin.left, margin.left + w]).clamp(true);
+
+    // Zone bars — normal zone prominent, extremes faded
+    cfg.zones.forEach(z => {
+        const isNormal = z.color.includes('green');
+        svg.append('rect')
+            .attr('x', x(z.from)).attr('y', barY)
+            .attr('width', x(z.to) - x(z.from)).attr('height', barH)
+            .attr('rx', 4).attr('ry', 4)
+            .attr('fill', isDark ? z.colorDark : z.color)
+            .attr('opacity', isNormal ? 0.45 : 0.1);
+    });
+    // Normal zone label
+    const greenZone = cfg.zones.find(z => z.color.includes('green'));
+    if (greenZone) {
+        const gx1 = x(greenZone.from), gx2 = x(greenZone.to);
+        const gmid = (gx1 + gx2) / 2;
+        svg.append('text')
+            .attr('x', gmid).attr('y', barY - 4)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '8px').attr('font-weight', '700')
+            .attr('font-family', 'Inter, sans-serif')
+            .attr('fill', isDark ? '#4ade80' : '#16a34a')
+            .attr('letter-spacing', '0.5px')
+            .text('NORMAL');
+    }
+
+    // Tick marks + labels — extremes smaller and muted
+    const tickColor = isDark ? '#94a3b8' : '#64748b';
+    const extremeColor = isDark ? '#475569' : '#cbd5e1';
+    const extremes = new Set(cfg.extremes || [cfg.min, cfg.max]);
+    cfg.ticks.forEach(t => {
+        const isExtreme = extremes.has(t);
+        svg.append('line')
+            .attr('x1', x(t)).attr('x2', x(t))
+            .attr('y1', barY + barH).attr('y2', barY + barH + 3)
+            .attr('stroke', isExtreme ? extremeColor : tickColor).attr('stroke-width', 0.8);
+        svg.append('text')
+            .attr('x', x(t)).attr('y', barY + barH + 13)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', isExtreme ? '8px' : '10px')
+            .attr('font-weight', isExtreme ? '400' : '600')
+            .attr('font-family', 'Inter, sans-serif')
+            .attr('fill', isExtreme ? extremeColor : tickColor)
+            .text(t + '°');
+    });
+
+    // Value marker — clamp to visible range
+    const vx = x(Math.max(cfg.min, Math.min(cfg.max, value)));
+    const inNormal = cfg.zones.some(z => z.color.includes('green') && value >= z.from && value <= z.to);
+    const markerColor = inNormal ? (isDark ? '#4ade80' : '#16a34a') :
+        cfg.zones.some(z => z.color.includes('amber') && value >= z.from && value <= z.to) ? (isDark ? '#fbbf24' : '#c0540a') :
+        (isDark ? '#f87171' : '#dc2626');
+
+    // Triangle marker pointing down
+    svg.append('path')
+        .attr('d', `M${vx - 5},${barY - 3} L${vx + 5},${barY - 3} L${vx},${barY + 2} Z`)
+        .attr('fill', markerColor);
+
+    // Marker line through bar
+    svg.append('line')
+        .attr('x1', vx).attr('x2', vx)
+        .attr('y1', barY - 1).attr('y2', barY + barH + 1)
+        .attr('stroke', markerColor).attr('stroke-width', 2.5)
+        .attr('stroke-linecap', 'round');
+}
+
 function renderD3Bars(akuma, mldfa, mmpta) {
     const theme = getChartTheme();
     renderContribBar('bar-iad-ead', [
@@ -2060,12 +2220,60 @@ function renderPhase1() {
     // JLCA direction
     const jlcaDir = _jlca <= 2 ? 'Normal' : (akuma.esVaro ? 'Contribución al varo' : 'Contribución al valgo');
 
+    // JLCA description when altered
+    let jlcaDesc = '';
+    if (_jlca > 2 && _jlca <= 4) {
+        jlcaDesc = 'Desgaste articular y/o laxitud de partes blandas. Parte de la deformidad se corrige al cargar el eje.';
+    } else if (_jlca > 4) {
+        jlcaDesc = 'Componente intra-articular significativo: desgaste cartilaginoso y/o laxitud ligamentosa. Limita la corrección ósea.';
+    }
+
     document.getElementById('component-rows').innerHTML = `
-        <div class="info-row ${ldfaStatus}"><span class="info-icon">&#9651;</span><div><strong>Femoral (mLDFA ${_mldfa}°) — ${femDir}</strong><br>Desviación: ${akuma.FD.toFixed(1)}° respecto a 87° (normal: 84-90°). ${_mldfa >= 84 && _mldfa <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mldfa > 90 ? 'Contribución femoral al varo.' : 'Fémur en valgo (compensación).') : (_mldfa < 84 ? 'Contribución femoral al valgo.' : 'Fémur en varo (compensación).')}</div></div>
-        <div class="info-row ${mptaStatus}"><span class="info-icon">&#9661;</span><div><strong>Tibial (mMPTA ${_mmpta}°) — ${tibDir}</strong><br>Desviación: ${akuma.TD.toFixed(1)}° respecto a 87° (normal: 84-90°). ${_mmpta >= 84 && _mmpta <= 90 ? 'Dentro del rango normal.' : akuma.esVaro ? (_mmpta < 84 ? 'Contribución tibial al varo.' : 'Tibia en valgo (compensación).') : (_mmpta > 90 ? 'Contribución tibial al valgo.' : 'Tibia en varo (compensación).')}</div></div>
-        <div class="info-row ${jlcaStatus}"><span class="info-icon">&#9671;</span><div><strong>Intra-articular (JLCA ${_jlca}°) — ${jlcaDir}</strong><br>${_jlca <= 2 ? 'Normal. Sin componente intra-articular significativo.' : _jlca <= 4 ? 'Moderadamente elevado. Puede reflejar desgaste articular y/o laxitud de partes blandas (<a class="ref-link" href="https://doi.org/10.1186/s40634-020-00283-1" target="_blank">Micicoi et al. 2020</a>).' : 'Patológico (>4°). Componente intra-articular significativo: desgaste cartilaginoso y/o laxitud ligamentosa.'}</div></div>
-        <div class="info-row neutral"><span class="info-icon">&#931;</span><div><strong>Verificación:</strong> GD = |EAD| + IAD = ${akuma.absEAD.toFixed(1)} + ${akuma.IAD.toFixed(1)} = ${akuma.GD.toFixed(1)}°</div></div>
+        <div class="comp-cards">
+            <div class="comp-card ${ldfaStatus}">
+                <div class="comp-card-head">
+                    <span class="comp-card-label">mLDFA <span class="comp-card-angle">Femoral</span></span>
+                    <span class="comp-card-badge ${ldfaStatus}">${femDir}</span>
+                </div>
+                <div class="comp-card-value">${_mldfa}°</div>
+                <div class="comp-card-range" id="range-ldfa"></div>
+            </div>
+            <div class="comp-card ${mptaStatus}">
+                <div class="comp-card-head">
+                    <span class="comp-card-label">mMPTA <span class="comp-card-angle">Tibial</span></span>
+                    <span class="comp-card-badge ${mptaStatus}">${tibDir}</span>
+                </div>
+                <div class="comp-card-value">${_mmpta}°</div>
+                <div class="comp-card-range" id="range-mpta"></div>
+            </div>
+            <div class="comp-card ${jlcaStatus}">
+                <div class="comp-card-head">
+                    <span class="comp-card-label">JLCA <span class="comp-card-angle">Intra-articular</span></span>
+                    <span class="comp-card-badge ${jlcaStatus}">${jlcaDir}</span>
+                </div>
+                <div class="comp-card-value">${_jlca}°</div>
+                <div class="comp-card-range" id="range-jlca"></div>
+                ${jlcaDesc ? `<div class="comp-card-desc">${jlcaDesc}</div>` : ''}
+            </div>
+        </div>
     `;
+
+    // D3 range indicators
+    renderRangeIndicator('range-ldfa', _mldfa, { min: 78, max: 96, zones: [
+        { from: 78, to: 84, color: 'var(--red)', colorDark: '#f87171' },
+        { from: 84, to: 90, color: 'var(--green)', colorDark: '#4ade80' },
+        { from: 90, to: 96, color: 'var(--red)', colorDark: '#f87171' }
+    ], ticks: [78, 84, 87, 90, 96], extremes: [78, 96] });
+    renderRangeIndicator('range-mpta', _mmpta, { min: 78, max: 96, zones: [
+        { from: 78, to: 84, color: 'var(--red)', colorDark: '#f87171' },
+        { from: 84, to: 90, color: 'var(--green)', colorDark: '#4ade80' },
+        { from: 90, to: 96, color: 'var(--red)', colorDark: '#f87171' }
+    ], ticks: [78, 84, 87, 90, 96], extremes: [78, 96] });
+    renderRangeIndicator('range-jlca', _jlca, { min: 0, max: 8, zones: [
+        { from: 0, to: 2, color: 'var(--green)', colorDark: '#4ade80' },
+        { from: 2, to: 4, color: 'var(--amber)', colorDark: '#fbbf24' },
+        { from: 4, to: 8, color: 'var(--red)', colorDark: '#f87171' }
+    ], ticks: [0, 2, 4, 6, 8], extremes: [0, 8] });
 
     // Update angle overlays on image
     const ovLdfa = document.getElementById('ov-ldfa');
@@ -2086,6 +2294,34 @@ function renderPhase1() {
     const eadSection = document.getElementById('ead-detail-section');
     if (akuma.absEAD > 0) { eadSection.style.display = ''; }
     else { eadSection.style.display = 'none'; }
+
+    // Clinical summary
+    const sumEl = document.getElementById('akuma-summary');
+    const tipoDeformidad = akuma.esVaro ? 'varo' : 'valgo';
+    const gdVal = akuma.GD.toFixed(1);
+    const theme = getChartTheme();
+    let sumHtml = '';
+    if (akuma.GD > 0) {
+        sumHtml += `<div class="akuma-summary-title">Resumen</div>`;
+        sumHtml += `<div class="sum-line"><span class="sum-dot" style="background:${theme.accent}"></span>Deformidad global de <strong>${gdVal}°</strong> de ${tipoDeformidad}</div>`;
+        if (akuma.IAD > 0 && akuma.absEAD > 0) {
+            sumHtml += `<div class="sum-line"><span class="sum-dot" style="background:${theme.amber}"></span><strong>${akuma.IAD.toFixed(1)}°</strong> intra-articular (${akuma.iadPct}%) y <strong>${akuma.absEAD.toFixed(1)}°</strong> extra-articular (${akuma.eadPct}%)</div>`;
+        } else if (akuma.IAD > 0) {
+            sumHtml += `<div class="sum-line"><span class="sum-dot" style="background:${theme.amber}"></span>Toda la deformidad es <strong>intra-articular</strong> (JLCA ${_jlca}°)</div>`;
+        } else {
+            sumHtml += `<div class="sum-line"><span class="sum-dot" style="background:${theme.blue || theme.accent}"></span>Toda la deformidad es <strong>extra-articular</strong></div>`;
+        }
+        if (akuma.absEAD > 0 && (akuma.tPct > 0 || akuma.fPct > 0)) {
+            const tibText = akuma.tPct > 0 ? `<strong>${akuma.tPct}%</strong> tibial` : '';
+            const femText = akuma.fPct > 0 ? `<strong>${akuma.fPct}%</strong> femoral` : '';
+            const sep = tibText && femText ? ' y ' : '';
+            sumHtml += `<div class="sum-line"><span class="sum-dot" style="background:${theme.purple || '#8b5cf6'}"></span>Componente extra-articular: ${tibText}${sep}${femText}</div>`;
+        }
+        sumEl.innerHTML = sumHtml;
+        sumEl.style.display = '';
+    } else {
+        sumEl.style.display = 'none';
+    }
 
     // Recommendation — variant as clickable link for tooltip (only for osteotomy variants)
     const hasVariantInfo = /MOWHTO|MCWHTO|LCWDFO|MCWDFO/.test(diag.recoVariant);
