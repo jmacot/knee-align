@@ -22,6 +22,10 @@ Herramienta de analisis de alineacion coronal de rodilla basada en los algoritmo
 - Zonas de Feucht para seleccion de objetivo HKA segun grado de artrosis (KL)
 - Visualizadores de rango interactivos para cada parametro
 - Explicacion educativa paso a paso del razonamiento clinico
+- Stepper de progreso visual (Analisis → Correccion) con estados activo/completado
+- Estado vacio con placeholder cuando no hay resultados
+- Transicion animada entre fases
+- Estilos de impresion optimizados (Ctrl+P)
 - Modo oscuro automatico
 
 ## Tecnologia
