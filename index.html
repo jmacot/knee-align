@@ -400,6 +400,17 @@
             .components-layout .components-img {
                 width: 220px; align-self: center;
             }
+            .comp-card {
+                grid-template-columns: 1fr;
+                gap: 4px 0;
+            }
+            .comp-card-head { grid-column: 1; grid-row: 1; }
+            .comp-card-value { grid-column: 1; grid-row: 2; }
+            .comp-card-range {
+                grid-column: 1; grid-row: 3;
+                margin-top: 4px;
+            }
+            .comp-card-desc { grid-column: 1; grid-row: 4; }
         }
 
         /* ── INFO TOOLTIP ── */
