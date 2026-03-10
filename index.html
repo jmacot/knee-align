@@ -524,6 +524,38 @@
         .info-row.purple { background: var(--purple-light); color: #5b21b6; }
         .info-row.neutral { background: var(--surface2); color: var(--text-muted); }
 
+        /* Discrepancia angular — collapsible */
+        .discrepancia-details { display: block; cursor: default; }
+        .discrepancia-details summary {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; list-style: none; user-select: none;
+        }
+        .discrepancia-details summary::-webkit-details-marker { display: none; }
+        .discrepancia-details summary::marker { display: none; content: ''; }
+        .disc-badge {
+            font-size: 11px; font-weight: 600; opacity: 0.7;
+            margin-left: auto; white-space: nowrap;
+        }
+        .disc-chevron {
+            width: 16px; height: 16px; flex-shrink: 0;
+            transition: transform 0.25s ease;
+        }
+        .discrepancia-details[open] .disc-chevron { transform: rotate(180deg); }
+        .disc-body {
+            padding: 10px 0 0 28px; font-size: 12px; line-height: 1.7;
+            animation: slideReveal 0.3s ease-out;
+        }
+        .disc-explain {
+            margin-top: 6px; padding: 8px 12px;
+            background: rgba(0,0,0,0.08); border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.06);
+            font-size: 11.5px; line-height: 1.6;
+        }
+        [data-theme="dark"] .disc-explain {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.08);
+        }
+
         .components-layout {
             display: flex; gap: 20px; align-items: flex-start;
         }
@@ -1805,7 +1837,13 @@ function calcularAKUMA(mHKA, mLDFA, mMPTA, JLCA) {
         }
     }
 
-    return { TD, FD, IAD, EAD, absEAD, GD, iadPct, eadPct, tPct, fPct, esVaro };
+    // Check de consistencia: HKA medido vs HKA calculado desde componentes
+    // HKA_calc = 180 + MPTA - LDFA - JLCA (varo) o + JLCA (valgo)
+    const hkaCalc = 180 + mMPTA - mLDFA - (esVaro ? JLCA : -JLCA);
+    const hkaMedido = 180 + mHKA; // mHKA es la desviación, HKA = 180 + mHKA
+    const discrepancia = Math.abs(hkaMedido - hkaCalc);
+
+    return { TD, FD, IAD, EAD, absEAD, GD, iadPct, eadPct, tPct, fPct, esVaro, discrepancia, hkaMedido, hkaCalc };
 }
 
 // ─────────────────────────────────────────────
@@ -2657,9 +2695,46 @@ function renderPhase1() {
             <div class="reco-rationale">${diag.rationale}</div>
         </div>
     `;
-    document.getElementById('warning-rows').innerHTML = diag.warnings.map(w =>
+    // Warnings del diagnóstico + check de consistencia
+    let warningsHtml = diag.warnings.map(w =>
         `<div class="info-row amber"><span class="info-icon">&#9888;</span><div>${w}</div></div>`
     ).join('');
+
+    // Check de consistencia angular
+    if (akuma.discrepancia > 3) {
+        const disc = akuma.discrepancia.toFixed(1);
+        const hkaM = akuma.hkaMedido.toFixed(1);
+        const hkaC = akuma.hkaCalc.toFixed(1);
+        const sumComp = (Math.abs(akuma.TD) + Math.abs(akuma.FD) + akuma.IAD).toFixed(1);
+        warningsHtml += `
+        <details class="info-row rose discrepancia-details">
+            <summary>
+                <span class="info-icon">&#9888;</span>
+                <strong>Discrepancia angular de ${disc}\u00b0</strong>
+                <span class="disc-badge">HKA medido ${hkaM}\u00b0 \u2260 calculado ${hkaC}\u00b0</span>
+                <svg class="disc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="disc-body">
+                Los \u00e1ngulos introducidos no explican el HKA medido:<br>
+                <span style="opacity:0.85">HKA medido = <strong>${hkaM}\u00b0</strong> &nbsp;|&nbsp; HKA calculado (180 + MPTA \u2212 LDFA \u2212 JLCA) = <strong>${hkaC}\u00b0</strong></span><br>
+                <span style="opacity:0.85">Componentes: TD ${Math.abs(akuma.TD).toFixed(1)}\u00b0 + FD ${Math.abs(akuma.FD).toFixed(1)}\u00b0 + JLCA ${akuma.IAD.toFixed(1)}\u00b0 = ${sumComp}\u00b0 &nbsp;\u2260&nbsp; GD ${akuma.GD.toFixed(1)}\u00b0</span>
+                <div class="disc-explain">
+                    <strong>\u00bfQu\u00e9 significa?</strong> Hay ${disc}\u00b0 de deformidad que MPTA, LDFA y JLCA no explican. Posibles causas:<br>
+                    \u2022 <strong>Error de medici\u00f3n / Malrotaci\u00f3n</strong> \u2014 revisar la telemetr\u00eda (lo m\u00e1s frecuente). ${akuma.esVaro
+                        ? 'La rotaci\u00f3n del miembro altera la medici\u00f3n del varo: en <strong>rotaci\u00f3n externa se sobreestima</strong> y en <strong>rotaci\u00f3n interna se infraestima</strong> <span style="opacity:0.7">(Pratobevera et al., EFORT Open Rev 2024)</span>'
+                        : 'La rotaci\u00f3n del miembro altera la medici\u00f3n del valgo: en <strong>rotaci\u00f3n interna se sobreestima</strong> y en <strong>rotaci\u00f3n externa se infraestima</strong> <span style="opacity:0.7">(Pratobevera et al., EFORT Open Rev 2024)</span>'}<br>
+                    <span style="font-size:11px;opacity:0.8;margin-left:14px;display:inline-block;margin-top:2px">\u2192 Signos de malrotaci\u00f3n en la Rx: ${akuma.esVaro
+                        ? 'en <em>rotaci\u00f3n externa</em> la r\u00f3tula se desplaza sobre el c\u00f3ndilo lateral, las espinas tibiales convergen y la cabeza del peron\u00e9 queda oculta; en <em>rotaci\u00f3n interna</em> la r\u00f3tula se sit\u00faa sobre el c\u00f3ndilo medial, las espinas divergen y se expone la cabeza del peron\u00e9'
+                        : 'en <em>rotaci\u00f3n interna</em> la r\u00f3tula se sit\u00faa sobre el c\u00f3ndilo medial, las espinas tibiales divergen y se expone la cabeza del peron\u00e9; en <em>rotaci\u00f3n externa</em> la r\u00f3tula se desplaza sobre el c\u00f3ndilo lateral y las espinas convergen'} <span style="opacity:0.7">(Schr\u00f6ter et al., J Knee Surg 2017)</span></span><br>
+                    \u2022 <strong>Curvatura diafisaria</strong> (bowing tibial o femoral) \u2014 deformidad del eje que no capturan los \u00e1ngulos periarticulares<br>
+                    \u2022 <strong>Subluxaci\u00f3n articular</strong> o laxitud ligamentosa en carga<br><br>
+                    <strong>Implicaci\u00f3n quir\u00fargica:</strong> Si la discrepancia es real (no error de medici\u00f3n), una osteotom\u00eda periarticular no podr\u00e1 corregir esos ${disc}\u00b0 adicionales sin forzar los \u00e1ngulos fuera de rango fisiol\u00f3gico. Considerar estudio con TC o telerradiograf\u00eda de control.
+                </div>
+            </div>
+        </details>`;
+    }
+
+    document.getElementById('warning-rows').innerHTML = warningsHtml;
 
     // Enable AKUMA button, reset any previous highlight
     document.getElementById('btn-aplicar-akuma').disabled = false;
