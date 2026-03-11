@@ -1887,6 +1887,11 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
     const mpptaPostHTO = esVaro ? mMPTA + correccion : mMPTA - correccion;
     const jloPostHTO = Math.abs(mpptaPostHTO - mLDFA);
 
+    // Simulación DFO aislada (Demey 2025, Schuster et al. KSSTA 2023)
+    const ldfaPostDFO = esVaro ? mLDFA - correccion : mLDFA + correccion;
+    const jloPostDFO = Math.abs(mMPTA - ldfaPostDFO);
+    const dfoSafe = (ldfaPostDFO >= 85 && ldfaPostDFO <= 90 && jloPostDFO <= 5 && mMPTA <= 94);
+
     // Edad
     if (edad > 65) {
         warnings.push('Edad >65 años: considerar artroplastia sobre osteotomía por menor capacidad de remodelación ósea.');
@@ -1923,6 +1928,26 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
             recoType = 'Osteotomía femoral distal'; recoName = 'DFO';
             recoVariant = esVaro ? 'Cierre cuña lateral (LCWDFO)' : 'Cierre cuña medial (MCWDFO)';
             rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente femoral (F% ${fPct}% ≥ 80%). mLDFA ${mLDFA}° desviado respecto a 87° (normal: 84-90°). La corrección se realiza a nivel femoral distal.`;
+            recoClass = '';
+        } else if (needsDLO && dfoSafe && fPct > tPct) {
+            // DFO aislada viable: criterios DLO presentes pero la simulación DFO normaliza LDFA y JLO
+            recoType = 'Osteotomía femoral distal'; recoName = 'DFO';
+            recoVariant = esVaro ? 'Cierre cuña lateral (LCWDFO)' : 'Cierre cuña medial (MCWDFO)';
+            const dloReasons = [];
+            if (Math.abs(FD) > 3) dloReasons.push(`FD ${FD.toFixed(1)}° > 3°`);
+            if (esVaro && mLDFA > 90) dloReasons.push(`mLDFA ${mLDFA}° > 90°`);
+            if (!esVaro && mLDFA < 84) dloReasons.push(`mLDFA ${mLDFA}° < 84°`);
+            if (mpptaPostHTO > 90) dloReasons.push(`MPTA postop HTO ${mpptaPostHTO.toFixed(1)}° > 90°`);
+            if (jloPostHTO > 5) dloReasons.push(`JLO postop HTO ${jloPostHTO.toFixed(1)}° > 5°`);
+            if (correccion > 12.5) dloReasons.push(`Corrección ${correccion.toFixed(1)}° > 12.5°`);
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) · Contribución femoral ${fPct}% > tibial ${tPct}%.<br><br>` +
+                `<strong>Criterios de DLO presentes:</strong> ${dloReasons.join('; ')}.<br><br>` +
+                `<strong>Sin embargo</strong>, la simulación de DFO aislada muestra valores postop seguros:<br>` +
+                `<ul class="reco-reasons">` +
+                `<li><span class="criterio-limite">LDFA postop</span> &rarr; <span class="criterio-ok">${ldfaPostDFO.toFixed(1)}° (rango 85-90° ✓)</span></li>` +
+                `<li><span class="criterio-limite">JLO postop</span> &rarr; <span class="criterio-ok">${jloPostDFO.toFixed(1)}° (≤5° ✓)</span></li>` +
+                `<li><span class="criterio-limite">MPTA</span> &rarr; <span class="criterio-ok">${mMPTA}° (sin tocar, <94° ✓)</span></li></ul>` +
+                `<small>La anatomía postoperatoria segura permite DFO aislada sin necesidad de DLO (<a class="ref-link" href="articulos/Distal femoral osteotomy for degenerative knee pathology.pdf" target="_blank">Demey 2025</a>, <a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a>).</small>`;
             recoClass = '';
         } else if (tPct >= 80 && Math.abs(FD) <= 3 && !needsDLO) {
             recoType = 'Osteotomía tibial alta'; recoName = 'HTO';
@@ -1962,7 +1987,7 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
         warnings.push(`MPTA postop estimado ${mpptaPostHTO.toFixed(1)}° > 95°: alto riesgo de sobrecarga compartimento lateral.`);
     }
 
-    return { recoType, recoName, recoVariant, rationale, recoClass, warnings, mpptaPostHTO, jloPostHTO, needsDLO };
+    return { recoType, recoName, recoVariant, rationale, recoClass, warnings, mpptaPostHTO, jloPostHTO, needsDLO, ldfaPostDFO, jloPostDFO, dfoSafe };
 }
 
 // ─────────────────────────────────────────────
@@ -2089,7 +2114,11 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
         } else if (diag.recoName === 'HTO') {
             paso3 += `La deformidad es predominantemente tibial (T% ${akuma.tPct}%) con FD ${akuma.FD.toFixed(1)}° ≤3°, permitiendo una ${v('HTO aislada', 'accent')} sin riesgo excesivo de JLO.`;
         } else if (diag.recoName === 'DFO') {
-            paso3 += `La deformidad es predominantemente femoral (F% ${akuma.fPct}%), indicando ${v('DFO', 'accent')}.`;
+            if (diag.dfoSafe && diag.needsDLO) {
+                paso3 += `Existen criterios de DLO (FD ${akuma.FD.toFixed(1)}° > 3°), pero la ${v('simulación de DFO aislada', 'accent')} muestra anatomía postop segura: LDFA ${diag.ldfaPostDFO.toFixed(1)}° (85-90°), JLO ${diag.jloPostDFO.toFixed(1)}° (≤5°). La corrección femoral aislada normaliza el eje sin comprometer la línea articular (<a class="ref-link" href="articulos/Distal femoral osteotomy for degenerative knee pathology.pdf" target="_blank">Demey 2025</a>).`;
+            } else {
+                paso3 += `La deformidad es predominantemente femoral (F% ${akuma.fPct}%), indicando ${v('DFO', 'accent')}.`;
+            }
         }
     } else {
         paso3 = `IAD% (${akuma.iadPct}%) y EAD% (${akuma.eadPct}%): ninguno supera el umbral del 60%. El paciente se encuentra en una ${v('zona gris', 'amber')} donde tanto la osteotomía como la UKA pueden ser opciones válidas. La decisión debe individualizarse.`;
