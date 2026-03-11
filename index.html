@@ -2792,7 +2792,7 @@ function renderPhase1() {
             `· mMPTA: ${_mmpta}°`,
             `· mLDFA: ${_mldfa}°`,
             `· JLCA: ${_jlca}°`,
-            `${tipoCapital} de ${gdVal}° de origen principalmente ${origen}`
+            `${tipoCapital} de ${gdVal}° de origen ${origen === 'mixto (intra y extraarticular)' ? '' : 'principalmente '}${origen}`
         ];
         telText.textContent = lines.join('\n');
     }
