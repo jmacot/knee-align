@@ -1723,6 +1723,27 @@
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script>
+// D3 CDN fallback chain — corporate proxies may block some CDNs (ERR_CERT_AUTHORITY_INVALID)
+(function() {
+    if (typeof d3 !== 'undefined') return;
+    var cdns = [
+        'https://d3js.org/d3.v7.min.js',
+        'https://unpkg.com/d3@7/dist/d3.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js'
+    ];
+    var i = 0;
+    function tryNext() {
+        if (i >= cdns.length || typeof d3 !== 'undefined') return;
+        var s = document.createElement('script');
+        s.src = cdns[i++];
+        s.onload = function() { console.log('D3 loaded from fallback CDN: ' + s.src); };
+        s.onerror = tryNext;
+        document.head.appendChild(s);
+    }
+    tryNext();
+})();
+</script>
+<script>
 // ─────────────────────────────────────────────
 //  CONSTANTES CLÍNICAS
 // ─────────────────────────────────────────────
@@ -2629,6 +2650,81 @@ function renderPhase1() {
         renderD3Bars(akuma, _mldfa, _mmpta);
     } catch (e) {
         console.warn('D3 charts unavailable:', e.message);
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        // Fallback — range indicators CSS cuando D3 no disponible
+        const fallbackRange = (id, value, cfg) => {
+            const c = document.getElementById(id);
+            if (!c) return;
+            c.textContent = '';
+            const range = cfg.max - cfg.min;
+            const pct = v => Math.max(0, Math.min(100, ((v - cfg.min) / range) * 100));
+            // Container
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:relative;width:100%;padding:18px 10px 18px';
+            // Bar track
+            const bar = document.createElement('div');
+            bar.style.cssText = 'display:flex;height:10px;border-radius:4px;overflow:hidden';
+            const inNormal = cfg.zones.some(z => z.isGreen && value >= z.from && value <= z.to);
+            cfg.zones.forEach(z => {
+                const seg = document.createElement('div');
+                const w = pct(z.to) - pct(z.from);
+                let opacity;
+                if (inNormal) { opacity = z.isGreen ? 0.45 : 0.1; }
+                else { opacity = z.isGreen ? 0.15 : (value >= z.from && value <= z.to ? 0.35 : 0.1); }
+                seg.style.cssText = 'width:' + w + '%;background:' + (isDark ? z.colorDark : z.color) + ';opacity:' + opacity;
+                bar.appendChild(seg);
+            });
+            wrap.appendChild(bar);
+            // Normal label
+            const greenZone = cfg.zones.find(z => z.isGreen);
+            if (greenZone) {
+                const lbl = document.createElement('div');
+                const left = (pct(greenZone.from) + pct(greenZone.to)) / 2;
+                const lblColor = inNormal ? (isDark ? '#4ade80' : '#16a34a') : (isDark ? '#2a5e3e' : '#a7d5b8');
+                lbl.style.cssText = 'position:absolute;top:0;left:' + left + '%;transform:translateX(-50%);font-size:8px;font-weight:700;font-family:Inter,sans-serif;color:' + lblColor + ';letter-spacing:0.5px';
+                lbl.textContent = 'NORMAL';
+                wrap.appendChild(lbl);
+            }
+            // Value marker
+            const vPct = pct(Math.max(cfg.min, Math.min(cfg.max, value)));
+            const mColor = inNormal ? (isDark ? '#4ade80' : '#16a34a') :
+                cfg.zones.some(z => z.isAmber && value >= z.from && value <= z.to) ? (isDark ? '#fbbf24' : '#c0540a') :
+                (isDark ? '#f87171' : '#dc2626');
+            const marker = document.createElement('div');
+            marker.style.cssText = 'position:absolute;top:14px;left:calc(' + vPct + '% + 10px);transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid ' + mColor;
+            wrap.appendChild(marker);
+            const line = document.createElement('div');
+            line.style.cssText = 'position:absolute;top:18px;left:calc(' + vPct + '% + 10px);transform:translateX(-50%);width:3px;height:12px;border-radius:2px;background:' + mColor;
+            wrap.appendChild(line);
+            // Tick labels
+            const ticks = document.createElement('div');
+            ticks.style.cssText = 'position:relative;height:14px;margin-top:2px';
+            cfg.ticks.forEach(t => {
+                const tk = document.createElement('span');
+                const isExt = cfg.extremes.includes(t);
+                const tColor = isExt ? (isDark ? '#475569' : '#cbd5e1') : (isDark ? '#94a3b8' : '#64748b');
+                tk.style.cssText = 'position:absolute;left:' + pct(t) + '%;transform:translateX(-50%);font-size:' + (isExt ? '8' : '10') + 'px;font-weight:' + (isExt ? '400' : '600') + ';font-family:Inter,sans-serif;color:' + tColor;
+                tk.textContent = t + '°';
+                ticks.appendChild(tk);
+            });
+            wrap.appendChild(ticks);
+            c.appendChild(wrap);
+        };
+        fallbackRange('range-ldfa', _mldfa, { min: 78, max: 96, zones: [
+            { from: 78, to: 84, color: 'var(--red)', colorDark: '#f87171', isGreen: false },
+            { from: 84, to: 90, color: 'var(--green)', colorDark: '#4ade80', isGreen: true },
+            { from: 90, to: 96, color: 'var(--red)', colorDark: '#f87171', isGreen: false }
+        ], ticks: [78, 84, 87, 90, 96], extremes: [78, 96] });
+        fallbackRange('range-mpta', _mmpta, { min: 78, max: 96, zones: [
+            { from: 78, to: 84, color: 'var(--red)', colorDark: '#f87171', isGreen: false },
+            { from: 84, to: 90, color: 'var(--green)', colorDark: '#4ade80', isGreen: true },
+            { from: 90, to: 96, color: 'var(--red)', colorDark: '#f87171', isGreen: false }
+        ], ticks: [78, 84, 87, 90, 96], extremes: [78, 96] });
+        fallbackRange('range-jlca', _jlca, { min: 0, max: 8, zones: [
+            { from: 0, to: 2, color: 'var(--green)', colorDark: '#4ade80', isGreen: true },
+            { from: 2, to: 4, color: 'var(--amber)', colorDark: '#fbbf24', isAmber: true },
+            { from: 4, to: 8, color: 'var(--red)', colorDark: '#f87171', isGreen: false }
+        ], ticks: [0, 2, 4, 6, 8], extremes: [0, 8] });
         // Fallback — barras CSS simples si D3 no está disponible
         const fallbackBar = (id, segs) => {
             const c = document.getElementById(id);
