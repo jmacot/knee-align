@@ -3256,7 +3256,7 @@ function onLimpiar() {
     window._phase1 = null;
     window._lastResult = null;
     _hasCalculated = false;
-    mostrarToast('Formulario limpiado');
+    mostrarToast('Formulario limpio');
 }
 
 function cargarEjemplo(idx) {
@@ -3302,12 +3302,26 @@ document.addEventListener('click', function(e) {
 function toggleGlossary() {
     const content = document.getElementById('glossary-content');
     const btn = document.getElementById('btn-glossary');
+    const otherContent = document.getElementById('refvalues-content');
+    const otherBtn = document.getElementById('btn-refvalues');
+    // Cerrar el otro si está abierto
+    if (otherContent.classList.contains('visible')) {
+        otherContent.classList.remove('visible');
+        otherBtn.classList.remove('open');
+    }
     content.classList.toggle('visible');
     btn.classList.toggle('open');
 }
 function toggleRefValues() {
     const content = document.getElementById('refvalues-content');
     const btn = document.getElementById('btn-refvalues');
+    const otherContent = document.getElementById('glossary-content');
+    const otherBtn = document.getElementById('btn-glossary');
+    // Cerrar el otro si está abierto
+    if (otherContent.classList.contains('visible')) {
+        otherContent.classList.remove('visible');
+        otherBtn.classList.remove('open');
+    }
     content.classList.toggle('visible');
     btn.classList.toggle('open');
 }
