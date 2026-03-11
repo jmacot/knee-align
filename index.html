@@ -1927,7 +1927,7 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
         if (fPct >= 80) {
             recoType = 'Osteotomía femoral distal'; recoName = 'DFO';
             recoVariant = esVaro ? 'Cierre cuña lateral (LCWDFO)' : 'Cierre cuña medial (MCWDFO)';
-            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente femoral (F% ${fPct}% ≥ 80%). mLDFA ${mLDFA}° desviado respecto a 87° (normal: 84-90°). La corrección se realiza a nivel femoral distal.`;
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente femoral (F% ${fPct}% ≥ 80%). mLDFA ${mLDFA}° desviado respecto a 87° (normal: 84-90°). La corrección se realiza a nivel femoral distal (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
             recoClass = '';
         } else if (needsDLO && dfoSafe && fPct > tPct) {
             // DFO aislada viable: criterios DLO presentes pero la simulación DFO normaliza LDFA y JLO
@@ -1952,7 +1952,7 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
         } else if (tPct >= 80 && Math.abs(FD) <= 3 && !needsDLO) {
             recoType = 'Osteotomía tibial alta'; recoName = 'HTO';
             recoVariant = esVaro ? 'Apertura cuña medial (MOWHTO)' : 'Cierre cuña medial (MCWHTO)';
-            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente tibial (T% ${tPct}%). FD ${FD.toFixed(1)}° ≤ 3° permite HTO aislada sin riesgo excesivo de JLO. MPTA postop estimado: ${mpptaPostHTO.toFixed(1)}°.`;
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) predominantemente tibial (T% ${tPct}%). FD ${FD.toFixed(1)}° ≤ 3° permite HTO aislada sin riesgo excesivo de JLO. MPTA postop estimado: ${mpptaPostHTO.toFixed(1)}° (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
             recoClass = '';
         } else if (needsDLO) {
             recoType = 'Osteotomía doble nivel'; recoName = 'DLO';
@@ -1973,7 +1973,7 @@ function diagnosticoDiferencial(akuma, edad, mLDFA, mMPTA, JLCA, targetHKA, mHKA
         } else {
             recoType = 'Osteotomía tibial alta'; recoName = 'HTO';
             recoVariant = esVaro ? 'Apertura cuña medial (MOWHTO)' : 'Cierre cuña medial (MCWHTO)';
-            rationale = `Deformidad extra-articular (EAD ${eadPct}%) con contribuciones mixtas (T% ${tPct}%, F% ${fPct}%). FD dentro de límites aceptables. MPTA postop estimado: ${mpptaPostHTO.toFixed(1)}° (aceptable).`;
+            rationale = `Deformidad extra-articular (EAD ${eadPct}%) con contribuciones mixtas (T% ${tPct}%, F% ${fPct}%). FD dentro de límites aceptables. MPTA postop estimado: ${mpptaPostHTO.toFixed(1)}° (aceptable) (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
             recoClass = '';
         }
     } else {
@@ -2112,12 +2112,12 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
             if (diag.jloPostHTO > 5) paso3 += `la JLO postop sería ${diag.jloPostHTO.toFixed(1)}° (>5°); `;
             paso3 += `(<a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a>, <a class="ref-link" href="https://doi.org/10.1007/s00167-022-07247-1" target="_blank">Schuster et al. KSSTA 2023</a>).`;
         } else if (diag.recoName === 'HTO') {
-            paso3 += `La deformidad es predominantemente tibial (T% ${akuma.tPct}%) con FD ${akuma.FD.toFixed(1)}° ≤3°, permitiendo una ${v('HTO aislada', 'accent')} sin riesgo excesivo de JLO.`;
+            paso3 += `La deformidad es predominantemente tibial (T% ${akuma.tPct}%) con FD ${akuma.FD.toFixed(1)}° ≤3°, permitiendo una ${v('HTO aislada', 'accent')} sin riesgo excesivo de JLO (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
         } else if (diag.recoName === 'DFO') {
             if (diag.dfoSafe && diag.needsDLO) {
                 paso3 += `Existen criterios de DLO (FD ${akuma.FD.toFixed(1)}° > 3°), pero la ${v('simulación de DFO aislada', 'accent')} muestra anatomía postop segura: LDFA ${diag.ldfaPostDFO.toFixed(1)}° (85-90°), JLO ${diag.jloPostDFO.toFixed(1)}° (≤5°). La corrección femoral aislada normaliza el eje sin comprometer la línea articular (<a class="ref-link" href="articulos/Distal femoral osteotomy for degenerative knee pathology.pdf" target="_blank">Demey 2025</a>).`;
             } else {
-                paso3 += `La deformidad es predominantemente femoral (F% ${akuma.fPct}%), indicando ${v('DFO', 'accent')}.`;
+                paso3 += `La deformidad es predominantemente femoral (F% ${akuma.fPct}%), indicando ${v('DFO', 'accent')} (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
             }
         }
     } else {
@@ -2919,7 +2919,7 @@ function renderPhase1() {
 function getPlateRecHtml(wedgeMm) {
     const plate = wedgeMm < 8 ? '3+3' : '4+4';
     const label = wedgeMm < 8 ? 'Placa 3+3 orificios' : 'Placa 4+4 orificios';
-    return `<span class="ci-plate-badge">${label}</span> (cuña ${wedgeMm < 8 ? '<' : '≥'} 8 mm)<div class="ci-plate-ref">Ollivier et al. <em>Orthop Traumatol Surg Res</em> 2024</div>`;
+    return `<span class="ci-plate-badge">${label}</span> (cuña ${wedgeMm < 8 ? '<' : '≥'} 8 mm)<div class="ci-plate-ref"><a class="ref-link" href="articulos/Osteotomy around the painful degenerative varus knee has broader indications than conventionally described but must follow a strict planning process.pdf" target="_blank">Ollivier et al. <em>Orthop Traumatol Surg Res</em> 2024</a></div>`;
 }
 
 // ─────────────────────────────────────────────
@@ -3015,7 +3015,7 @@ function onPostopEdit() {
             const plate = wedgeTotal < 8 ? '3+3' : '4+4';
             plateVal.textContent = plate + ' orificios';
             plateVal.style.cssText = '';
-            plateNote.innerHTML = `Cuña ${wedgeTotal < 8 ? '<' : '≥'} 8 mm<div class="ci-plate-ref">Ollivier et al. <em>Orthop Traumatol Surg Res</em> 2024</div>`;
+            plateNote.innerHTML = `Cuña ${wedgeTotal < 8 ? '<' : '≥'} 8 mm<div class="ci-plate-ref"><a class="ref-link" href="articulos/Osteotomy around the painful degenerative varus knee has broader indications than conventionally described but must follow a strict planning process.pdf" target="_blank">Ollivier et al. <em>Orthop Traumatol Surg Res</em> 2024</a></div>`;
             plateBox.style.display = '';
         }
     } else {
@@ -3394,6 +3394,13 @@ function generarPDF(soloAnalisis) {
     const correc = (!soloAnalisis && r) ? r.correc : null;
     const data = correc ? r.data : { mhka, mldfa, mmpta, jlca, edad };
 
+    // ── Read user-edited values from UI inputs (if user tweaked postop planning) ──
+    const userMPTA = parseFloat(document.getElementById('ci-mmpta')?.value) || (correc ? correc.targetMPTA : null);
+    const userLDFA = parseFloat(document.getElementById('ci-mldfa')?.value) || (correc ? correc.targetLDFA : null);
+    const userTibWidth = parseFloat(document.getElementById('ci-tibwidth')?.value) || null;
+    const userSierra = parseFloat(document.getElementById('ci-sierra')?.value);
+    const userWBL = parseFloat(document.getElementById('inp-wbl')?.value) || null;
+
     const paciente = document.getElementById('inp-paciente')?.value?.trim() || '';
     const lateralidad = document.getElementById('inp-lateralidad')?.value || '';
 
@@ -3609,16 +3616,15 @@ function generarPDF(soloAnalisis) {
                 widths: ['*'],
                 body: [[{
                     stack: [
-                        { text: 'DECISIÓN RECOMENDADA', fontSize: hasPhase2 ? 8 : 9.5, bold: true, color: accent, letterSpacing: 1.5, margin: [0, 0, 0, hasPhase2 ? 4 : 8] },
-                        { text: diag.recoName, fontSize: hasPhase2 ? 16 : 22, bold: true, color: accentDark },
-                        ...(diag.recoVariant ? [{ text: diag.recoVariant, fontSize: hasPhase2 ? 10 : 12, color: '#555555', margin: [0, hasPhase2 ? 3 : 6, 0, 0] }] : [])
+                        { text: 'DECISIÓN RECOMENDADA', fontSize: hasPhase2 ? 8 : 9.5, bold: true, color: accent, letterSpacing: 1.5, alignment: 'center', margin: [0, 0, 0, hasPhase2 ? 4 : 8] },
+                        { text: diag.recoName, fontSize: hasPhase2 ? 16 : 22, bold: true, color: accentDark, alignment: 'center' },
+                        ...(diag.recoVariant ? [{ text: diag.recoVariant, fontSize: hasPhase2 ? 10 : 12, color: '#555555', alignment: 'center', margin: [0, hasPhase2 ? 3 : 6, 0, 0] }] : [])
                     ],
                     margin: [0, 0, 0, 0]
                 }]]
             },
             layout: {
-                hLineWidth: () => 0, vLineWidth: (i) => i === 0 ? 3.5 : 0,
-                vLineColor: () => accent,
+                hLineWidth: () => 0, vLineWidth: () => 0,
                 paddingLeft: () => 16, paddingRight: () => 14,
                 paddingTop: () => hasPhase2 ? 12 : 20, paddingBottom: () => hasPhase2 ? 12 : 20,
                 fillColor: () => '#f0f4f8'
@@ -3658,77 +3664,203 @@ function generarPDF(soloAnalisis) {
     if (correc) {
         content.push({ text: 'PLANIFICACIÓN DE CORRECCIÓN', style: 'secLabel', margin: [0, 4, 0, 10] });
 
-        // ── KPI row: correction + postop angles (highlighted) ──
-        content.push({
-            table: {
-                widths: ['*', '*', '*', '*'],
-                body: [[
-                    {
-                        stack: [
-                            { text: 'CORRECCIÓN', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
-                            { text: correc.correccion.toFixed(1) + '°', fontSize: 24, bold: true, color: accent, alignment: 'center', margin: [0, 4, 0, 0] }
-                        ],
-                        margin: [0, 8, 0, 8]
-                    },
-                    {
-                        stack: [
-                            { text: 'mMPTA POSTOP', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
-                            { text: correc.targetMPTA.toFixed(1) + '°', fontSize: 24, bold: true, color: '#15803d', alignment: 'center', margin: [0, 4, 0, 0] }
-                        ],
-                        margin: [0, 8, 0, 8]
-                    },
-                    {
-                        stack: [
-                            { text: 'mLDFA POSTOP', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
-                            { text: correc.targetLDFA.toFixed(1) + '°', fontSize: 24, bold: true, color: '#15803d', alignment: 'center', margin: [0, 4, 0, 0] }
-                        ],
-                        margin: [0, 8, 0, 8]
-                    },
-                    {
-                        stack: [
-                            { text: 'HKA OBJETIVO', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
-                            { text: (data.target + 180).toFixed(1) + '°', fontSize: 24, bold: true, color: accent, alignment: 'center', margin: [0, 4, 0, 0] }
-                        ],
-                        margin: [0, 8, 0, 8]
-                    }
-                ]]
-            },
-            layout: {
-                hLineWidth: () => 0.6, vLineWidth: () => 0.6,
-                hLineColor: () => '#d1d5db', vLineColor: () => '#d1d5db',
-                paddingTop: () => 0, paddingBottom: () => 0
-            },
-            margin: [0, 0, 0, 10]
-        });
-
-        // ── Secondary details row ──
-        const pdfSierraVal = correc.tibVariant === 'MOWHTO' ? 1.27 : 0;
-        const pdfWedgeTotal = correc.wedgeHeight + pdfSierraVal;
-        const pdfPlateWedge = correc.tibVariant === 'MOWHTO' ? pdfWedgeTotal : correc.wedgeHeight;
-        const detailItems = [
-            ['JLO postop', correc.jloPostop.toFixed(1) + '°'],
-            ['Cuña ósea', correc.wedgeHeight.toFixed(1) + ' mm'],
-            ...(correc.tibVariant === 'MOWHTO' ? [['+ Sierra', pdfSierraVal.toFixed(2) + ' mm → ' + pdfWedgeTotal.toFixed(1) + ' mm total']] : []),
-            ['Placa', pdfPlateWedge < 8 ? '3+3 orificios' : '4+4 orificios']
-        ];
+        // ── KPI summary: CORRECCIÓN + HKA OBJETIVO (compact row) ──
+        const pdfMPTA = userMPTA || correc.targetMPTA;
+        const pdfLDFA = userLDFA || correc.targetLDFA;
+        const deltaMPTA = pdfMPTA - data.mmpta;
+        const deltaLDFA = pdfLDFA - data.mldfa;
+        const fmtDelta = (d) => (d >= 0 ? '+' : '') + d.toFixed(1) + '°';
+        const deltaColor = (d) => Math.abs(d) < 0.05 ? '#888888' : (d > 0 ? '#15803d' : '#b91c1c');
 
         content.push({
             columns: [
-                ...detailItems.map(([k, v]) => ({
+                {
                     width: '*',
-                    text: [
-                        { text: k + '  ', fontSize: 9, color: '#888888' },
-                        { text: v, fontSize: 10, bold: true, color: '#333333' }
+                    stack: [
+                        { text: 'CORRECCIÓN', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
+                        { text: correc.correccion.toFixed(1) + '°', fontSize: 22, bold: true, color: accent, alignment: 'center', margin: [0, 3, 0, 0] }
                     ]
-                })),
-                ...(correc.micicoi ? [{
+                },
+                {
                     width: '*',
-                    text: [
-                        { text: 'Micicoi  ', fontSize: 9, color: '#6d28d9' },
-                        { text: `−${correc.micicioiReduccion.toFixed(1)}° p.blandas → ${(correc.correccion - correc.micicioiReduccion).toFixed(1)}° ósea`, fontSize: 9, bold: true, color: '#5b21b6' }
+                    stack: [
+                        { text: 'HKA OBJETIVO', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
+                        { text: (data.target + 180).toFixed(1) + '°', fontSize: 22, bold: true, color: accent, alignment: 'center', margin: [0, 3, 0, 0] }
                     ]
-                }] : [])
+                }
             ],
+            margin: [0, 0, 0, 10]
+        });
+
+        // ── Visual arrow flow: ACTUAL → ±X° → POSTOP (like UI step 4) ──
+        function arrowRow(label, preop, postop, delta) {
+            const dCol = deltaColor(delta);
+            const noChange = Math.abs(delta) < 0.05;
+            return {
+                columns: [
+                    { width: '*', text: '' },
+                    // ACTUAL box
+                    {
+                        width: '32%',
+                        table: { widths: ['*'], body: [[{
+                            stack: [
+                                { text: label + ' ACTUAL', fontSize: 7, bold: true, color: '#888888', alignment: 'center' },
+                                { text: preop + '°', fontSize: 18, bold: true, color: '#333333', alignment: 'center', margin: [0, 4, 0, 4] }
+                            ]
+                        }]] },
+                        layout: {
+                            hLineWidth: () => 0.8,
+                            vLineWidth: () => 0.8,
+                            hLineColor: () => '#cccccc',
+                            vLineColor: () => '#cccccc',
+                            paddingTop: () => 4, paddingBottom: () => 4
+                        }
+                    },
+                    // Arrow + delta
+                    {
+                        width: '20%',
+                        stack: [
+                            { text: fmtDelta(delta), fontSize: 13, bold: true, color: dCol, alignment: 'center', margin: [0, 4, 0, 2] },
+                            {
+                                canvas: [
+                                    { type: 'line', x1: 2, y1: 6, x2: 56, y2: 6, lineWidth: 1.5, lineColor: '#999999' },
+                                    { type: 'polyline', lineWidth: 0, closePath: true, color: '#999999',
+                                      points: [{ x: 52, y: 1 }, { x: 62, y: 6 }, { x: 52, y: 11 }] }
+                                ],
+                                width: 64, height: 12,
+                                alignment: 'center',
+                                margin: [0, 0, 0, 0]
+                            }
+                        ]
+                    },
+                    // POSTOP box (highlighted)
+                    {
+                        width: '32%',
+                        table: { widths: ['*'], body: [[{
+                            stack: [
+                                { text: label + ' POSTOP', fontSize: 7, bold: true, color: accent, alignment: 'center' },
+                                { text: postop.toFixed(1) + '°', fontSize: 18, bold: true, color: accentDark, alignment: 'center', margin: [0, 4, 0, 4] }
+                            ]
+                        }]] },
+                        layout: {
+                            hLineWidth: () => 1.5,
+                            vLineWidth: () => 1.5,
+                            hLineColor: () => accent,
+                            vLineColor: () => accent,
+                            paddingTop: () => 4, paddingBottom: () => 4
+                        }
+                    },
+                    { width: '*', text: '' }
+                ],
+                columnGap: 0,
+                margin: [0, 0, 0, 6]
+            };
+        }
+
+        if (Math.abs(deltaMPTA) >= 0.05) content.push(arrowRow('mMPTA', data.mmpta, pdfMPTA, deltaMPTA));
+        if (Math.abs(deltaLDFA) >= 0.05) content.push(arrowRow('mLDFA', data.mldfa, pdfLDFA, deltaLDFA));
+
+        // ── Determine variant and plate type ──
+        let pdfVariant = correc.tibVariant || '';
+        if (diag.recoName === 'DFO') {
+            pdfVariant = akuma.esVaro ? 'LCWDFO' : 'MCWDFO';
+        } else if (diag.recoName === 'DLO') {
+            // DLO has both tibial + femoral; use tibial variant for wedge, show both
+            if (!pdfVariant) pdfVariant = akuma.esVaro ? 'MOWHTO' : 'MCWHTO';
+        }
+        const pdfVariantInfo = VARIANT_INFO[pdfVariant] || null;
+
+        // ── Recalculate wedge with user tibial width if provided ──
+        const pdfSierraVal = isNaN(userSierra) ? (correc.tibVariant === 'MOWHTO' ? 1.27 : 0) : userSierra;
+        const pdfTibWidth = userTibWidth || TIBIAL_WIDTH;
+        const isHTO = diag.recoName === 'HTO' || diag.recoName === 'DLO';
+        const pdfWedgeHeight = isHTO ? pdfTibWidth * Math.tan(correc.tibialCorrecAngle * Math.PI / 180) : correc.wedgeHeight;
+        const pdfWedgeTotal = pdfWedgeHeight + pdfSierraVal;
+        const pdfPlateWedge = correc.tibVariant === 'MOWHTO' ? pdfWedgeTotal : pdfWedgeHeight;
+
+        // ── JLO + Micicoi small row ──
+        const jloMicicoiItems = [
+            { text: [{ text: 'JLO postop  ', fontSize: 9, color: '#888888' }, { text: correc.jloPostop.toFixed(1) + '°', fontSize: 10, bold: true, color: '#333333' }] }
+        ];
+        if (correc.micicoi) {
+            jloMicicoiItems.push({
+                text: [
+                    { text: 'Micicoi  ', fontSize: 9, color: '#6d28d9' },
+                    { text: `−${correc.micicioiReduccion.toFixed(1)}° p.blandas → ${(correc.correccion - correc.micicioiReduccion).toFixed(1)}° ósea`, fontSize: 9, bold: true, color: '#5b21b6' }
+                ]
+            });
+        }
+        content.push({ columns: jloMicicoiItems.map(item => ({ width: '*', ...item })), margin: [0, 0, 0, 8] });
+
+        // ── PLANIFICACIÓN QUIRÚRGICA — highlighted box ──
+        const surgicalCells = [];
+
+        // Cuña ósea (only for HTO/DLO with tibial component)
+        if (isHTO) {
+            const wedgeLines = [
+                { text: 'CUÑA ÓSEA', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
+                { text: pdfWedgeHeight.toFixed(1) + ' mm', fontSize: 16, bold: true, color: accent, alignment: 'center', margin: [0, 3, 0, 0] }
+            ];
+            if (pdfSierraVal > 0) {
+                wedgeLines.push({ text: '+ sierra ' + pdfSierraVal.toFixed(2) + ' mm → ' + pdfWedgeTotal.toFixed(1) + ' mm', fontSize: 7.5, color: '#888888', alignment: 'center', margin: [0, 2, 0, 0] });
+            }
+            surgicalCells.push({ stack: wedgeLines, margin: [0, 6, 0, 6] });
+        }
+
+        // Ancho meseta (only if user entered it — HTO/DLO)
+        if (isHTO && userTibWidth) {
+            surgicalCells.push({
+                stack: [
+                    { text: 'ANCHO MESETA', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
+                    { text: userTibWidth.toFixed(0) + ' mm', fontSize: 16, bold: true, color: accent, alignment: 'center', margin: [0, 3, 0, 0] }
+                ],
+                margin: [0, 6, 0, 6]
+            });
+        }
+
+        // WBL% (only if user entered it)
+        if (userWBL) {
+            surgicalCells.push({
+                stack: [
+                    { text: 'WBL%', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' },
+                    { text: userWBL.toFixed(1) + '%', fontSize: 16, bold: true, color: accent, alignment: 'center', margin: [0, 3, 0, 0] }
+                ],
+                margin: [0, 6, 0, 6]
+            });
+        }
+
+        // Placa — with variant-specific name
+        const plateHoles = pdfPlateWedge < 8 ? '3+3 orificios' : '4+4 orificios';
+        const plateName = pdfVariantInfo ? pdfVariantInfo.fijacion : '';
+        const plateLines = [
+            { text: 'FIJACIÓN', fontSize: 7.5, bold: true, color: '#888888', alignment: 'center' }
+        ];
+        if (isHTO) {
+            plateLines.push({ text: plateHoles, fontSize: 16, bold: true, color: accent, alignment: 'center', margin: [0, 3, 0, 0] });
+        }
+        if (plateName) {
+            plateLines.push({ text: plateName, fontSize: 8, color: '#555555', alignment: 'center', margin: [0, 2, 0, 0] });
+        }
+        surgicalCells.push({ stack: plateLines, margin: [0, 6, 0, 6] });
+
+        // Build table with dynamic widths
+        const surgWidths = surgicalCells.map(() => '*');
+        content.push({
+            table: {
+                widths: surgWidths,
+                body: [
+                    [{ text: 'PLANIFICACIÓN QUIRÚRGICA', colSpan: surgicalCells.length, fontSize: 7.5, bold: true, color: accent, letterSpacing: 1.2, alignment: 'center', margin: [0, 6, 0, 4], fillColor: '#f0f7ff' }, ...Array(surgicalCells.length - 1).fill({})],
+                    surgicalCells.map(cell => ({ ...cell, fillColor: '#f0f7ff' }))
+                ]
+            },
+            layout: {
+                hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 1 : 0.4,
+                vLineWidth: () => 0.4,
+                hLineColor: () => '#bfd4ed',
+                vLineColor: () => '#bfd4ed',
+                paddingTop: () => 0, paddingBottom: () => 0,
+                paddingLeft: () => 4, paddingRight: () => 4
+            },
             margin: [0, 0, 0, 10]
         });
     }
@@ -3844,7 +3976,7 @@ const VARIANT_INFO = {
         abordaje: 'Anteromedial',
         slope: 'Aumenta slope posterior ~2° por cada 10° de corrección',
         riesgos: 'Fractura bisagra lateral, necesita injerto si apertura >10 mm',
-        fijacion: 'Placa bloqueada anteromedial (TomoFix o similar)',
+        fijacion: 'Placa bloqueada anteromedial',
         nota: 'Variante más frecuente en HTO para varo'
     },
     'MCWHTO': {
@@ -3860,7 +3992,7 @@ const VARIANT_INFO = {
         abordaje: 'Lateral del fémur distal',
         slope: 'Mínimo efecto sobre slope tibial',
         riesgos: 'Acortamiento del miembro, rigidez de rodilla, fractura bisagra medial',
-        fijacion: 'Placa bloqueada lateral (TomoFix distal o LCP)',
+        fijacion: 'Placa bloqueada lateral',
         nota: 'Variante habitual para corrección de varo femoral'
     },
     'MCWDFO': {
