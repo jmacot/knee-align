@@ -2258,30 +2258,41 @@ function generarExplicacion(data, clasificacion, akuma, diag, correc) {
     if (akuma.absEAD > 0) paso2 += `<br>\u2022 Contribución tibial (T%) = ${v(akuma.tPct + '%', 'accent')} / Contribución femoral (F%) = ${v(akuma.fPct + '%', 'purple')}`;
     steps.push({ title: `Análisis ${algoName} — Localización de deformidad`, text: paso2 });
 
-    // Paso 3
+    // Paso 3 — ramificar por diag.recoName (fuente de verdad) para que el texto
+    // siempre coincida con la recomendación final
     let paso3 = '';
-    if (akuma.iadPct > 60) {
+    if (diag.recoName === 'Sin indicación') {
+        paso3 = `Deformidad global ${v(akuma.GD.toFixed(1) + '°', 'green')} dentro de rangos fisiológicos (<2°). No existe indicación quirúrgica basada en la alineación coronal.`;
+    } else if (diag.recoName === 'UKA') {
         paso3 = `IAD% (${akuma.iadPct}%) supera el 60%, lo que indica una deformidad ${v('predominantemente intra-articular', 'amber')}. El JLCA de ${data.jlca}° refleja desgaste del cartílago y/o laxitud del tejido blando. `;
         paso3 += `En este contexto, una solución intra-articular como la ${v('UKA', 'amber')} tiende a ofrecer mejores resultados que la osteotomía (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. 2025</a>).`;
         if (data.edad <= 55) paso3 += ` Dado que la edad es ${data.edad} años, la UKA preserva estructuras nativas para posible conversión futura.`;
-    } else if (akuma.eadPct > 60) {
+    } else if (diag.recoName === 'UKA / TKA') {
+        paso3 = `EAD% (${akuma.eadPct}%) supera el 60%, lo que indica una deformidad ${v('predominantemente extra-articular', 'accent')}. `;
+        paso3 += `Sin embargo, la ${v('edad ' + data.edad + ' años (>70)', 'amber')} contraindica la osteotomía correctora por la limitada capacidad de remodelación ósea. `;
+        paso3 += `Se recomienda ${v('artroplastia (UKA / TKA)', 'amber')} según el grado y patrón de afectación articular (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>, <a class="ref-link" href="articulos/Goodell-JBJS-2023.pdf" target="_blank">Goodell et al. JBJS 2023</a>).`;
+    } else if (diag.recoName === 'No osteotomía') {
+        paso3 = `Aunque EAD% (${akuma.eadPct}%) supera el 60%, los ángulos óseos (mMPTA ${data.mmpta}°, mLDFA ${data.mldfa}°) están dentro de rangos fisiológicos. `;
+        paso3 += `La deformidad es ${v('constitucional', 'amber')} — no existe defecto angular que corregir mediante osteotomía. Valorar artroplastia según grado de afectación articular (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
+    } else if (diag.recoName === 'HTO') {
         paso3 = `EAD% (${akuma.eadPct}%) supera el 60%, lo que indica una deformidad ${v('predominantemente extra-articular', 'accent')}. La corrección mediante osteotomía es la opción preferida. `;
-        if (diag.recoName === 'DLO') {
-            paso3 += `Sin embargo, se recomienda ${v('osteotomía doble nivel (DLO)', 'purple')} porque: `;
-            if (Math.abs(akuma.FD) > 3) paso3 += `la deformidad femoral (FD ${akuma.FD.toFixed(1)}°) supera 3° (consenso ESSKA); `;
-            if (diag.mpptaPostHTO > 90) paso3 += `una HTO aislada crearía un MPTA postop de ${diag.mpptaPostHTO.toFixed(1)}° (>90°); `;
-            if (diag.jloPostHTO > 5) paso3 += `la JLO postop sería ${diag.jloPostHTO.toFixed(1)}° (>5°); `;
-            paso3 += `(<a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a>, <a class="ref-link" href="https://doi.org/10.1002/ksa.12256" target="_blank">Dawson et al. ESSKA Consensus Part I KSSTA 2024</a>).`;
-        } else if (diag.recoName === 'HTO') {
-            paso3 += `La deformidad es predominantemente tibial (T% ${akuma.tPct}%) con FD ${akuma.FD.toFixed(1)}° ≤3°, permitiendo una ${v('HTO aislada', 'accent')} sin riesgo excesivo de JLO (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
-        } else if (diag.recoName === 'DFO') {
-            if (diag.dfoSafe && diag.needsDLO) {
-                paso3 += `Existen criterios de DLO (FD ${akuma.FD.toFixed(1)}° > 3°), pero la ${v('simulación de DFO aislada', 'accent')} muestra anatomía postop segura: LDFA ${diag.ldfaPostDFO.toFixed(1)}° (85-90°), JLO ${diag.jloPostDFO.toFixed(1)}° (≤5°). La corrección femoral aislada normaliza el eje sin comprometer la línea articular (<a class="ref-link" href="articulos/Distal femoral osteotomy for degenerative knee pathology.pdf" target="_blank">Demey 2025</a>).`;
-            } else {
-                paso3 += `La deformidad es predominantemente femoral (F% ${akuma.fPct}%), indicando ${v('DFO', 'accent')} (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
-            }
+        paso3 += `La deformidad es predominantemente tibial (T% ${akuma.tPct}%) con FD ${akuma.FD.toFixed(1)}° ≤3°, permitiendo una ${v('HTO aislada', 'accent')} sin riesgo excesivo de JLO (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
+    } else if (diag.recoName === 'DFO') {
+        paso3 = `EAD% (${akuma.eadPct}%) supera el 60%, lo que indica una deformidad ${v('predominantemente extra-articular', 'accent')}. La corrección mediante osteotomía es la opción preferida. `;
+        if (diag.dfoSafe && diag.needsDLO) {
+            paso3 += `Existen criterios de DLO (FD ${akuma.FD.toFixed(1)}° > 3°), pero la ${v('simulación de DFO aislada', 'accent')} muestra anatomía postop segura: LDFA ${diag.ldfaPostDFO.toFixed(1)}° (85-90°), JLO ${diag.jloPostDFO.toFixed(1)}° (≤5°). La corrección femoral aislada normaliza el eje sin comprometer la línea articular (<a class="ref-link" href="articulos/Distal femoral osteotomy for degenerative knee pathology.pdf" target="_blank">Demey 2025</a>).`;
+        } else {
+            paso3 += `La deformidad es predominantemente femoral (F% ${akuma.fPct}%), indicando ${v('DFO', 'accent')} (<a class="ref-link" href="articulos/Ollivier-KSSTA-2025.pdf" target="_blank">Ollivier et al. KSSTA 2025</a>).`;
         }
+    } else if (diag.recoName === 'DLO') {
+        paso3 = `EAD% (${akuma.eadPct}%) supera el 60%, lo que indica una deformidad ${v('predominantemente extra-articular', 'accent')}. `;
+        paso3 += `Se recomienda ${v('osteotomía doble nivel (DLO)', 'purple')} porque: `;
+        if (Math.abs(akuma.FD) > 3) paso3 += `la deformidad femoral (FD ${akuma.FD.toFixed(1)}°) supera 3° (consenso ESSKA); `;
+        if (diag.mpptaPostHTO > 90) paso3 += `una HTO aislada crearía un MPTA postop de ${diag.mpptaPostHTO.toFixed(1)}° (>90°); `;
+        if (diag.jloPostHTO > 5) paso3 += `la JLO postop sería ${diag.jloPostHTO.toFixed(1)}° (>5°); `;
+        paso3 += `(<a class="ref-link" href="articulos/Lott-JISAKOS-2024.pdf" target="_blank">Lott et al. JISAKOS 2024</a>, <a class="ref-link" href="https://doi.org/10.1002/ksa.12256" target="_blank">Dawson et al. ESSKA Consensus Part I KSSTA 2024</a>).`;
     } else {
+        // Zona gris: recoName === 'Osteotomía / UKA'
         paso3 = `IAD% (${akuma.iadPct}%) y EAD% (${akuma.eadPct}%): ninguno supera el umbral del 60%. El paciente se encuentra en una ${v('zona gris', 'amber')} donde tanto la osteotomía como la UKA pueden ser opciones válidas. La decisión debe individualizarse.`;
     }
     steps.push({ title: 'Diagnóstico diferencial', text: paso3 });
